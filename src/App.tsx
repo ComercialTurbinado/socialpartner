@@ -1,0 +1,54 @@
+import { useState } from 'react';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import Dashboard from './components/Dashboard';
+import Sidebar from './components/Sidebar';
+import SocialMediaConnect from './components/SocialMediaConnect';
+import FacebookConnect from './components/FacebookConnect';
+import InstagramConnect from './components/InstagramConnect';
+import TwitterConnect from './components/TwitterConnect';
+import LinkedInConnect from './components/LinkedInConnect';
+import GoogleReviews from './components/GoogleReviews';
+import GoogleConnect from './components/GoogleConnect';
+import { Box } from '@mui/material';
+import './App.css';
+
+function App() {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
+
+  return (
+    <Router>
+      <Box sx={{ display: 'flex' }}>
+        <Sidebar open={sidebarOpen} onToggle={toggleSidebar} />
+        <Box
+          component="main"
+          sx={{
+            flexGrow: 1,
+            transition: (theme) => theme.transitions.create('margin', {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.leavingScreen,
+            }),
+            marginLeft: 0,
+            width: '100%'
+          }}
+        >
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/social-media" element={<SocialMediaConnect />} />
+            <Route path="/facebook" element={<FacebookConnect />} />
+            <Route path="/instagram" element={<InstagramConnect />} />
+            <Route path="/twitter" element={<TwitterConnect />} />
+            <Route path="/linkedin" element={<LinkedInConnect />} />
+            <Route path="/google-reviews" element={<GoogleReviews />} />
+            <Route path="/google" element={<GoogleConnect />} />
+          </Routes>
+        </Box>
+      </Box>
+    </Router>
+  );
+}
+
+export default App;

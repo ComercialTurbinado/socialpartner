@@ -1,0 +1,80 @@
+body{
+    background: #f3f3f3;
+}
+/* Dashboard Styles */
+.dashboard-card {
+  transition: transform 0.2s ease-in-out;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-2px);
+}
+
+/* Chart container styles */
+.chart-container {
+  position: relative;
+  margin: auto;
+}
+
+/* Top Performers list styles */
+.performer-item {
+  transition: background-color 0.2s ease;
+}
+
+.performer-item:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+/* Gamification card styles */
+.reward-card {
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.reward-card:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Status badge styles */
+.status-badge {
+  border-radius: 12px;
+  padding: 4px 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.status-badge.active {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.status-badge.new {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+/* Chart control buttons */
+.chart-controls {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.chart-controls button {
+  padding: 4px;
+  border-radius: 4px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 960px) {
+  .chart-container {
+    height: auto !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .reward-card {
+    margin-bottom: 16px;
+  }
+}
