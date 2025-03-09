@@ -30,7 +30,7 @@ Seu projeto já está configurado corretamente com:
 
 ### 4. Configure as opções de build
 
-O Amplify detectará automaticamente que é um projeto React/Vite, mas você pode precisar ajustar as configurações:
+O Amplify detectará automaticamente que é um projeto React/Vite, mas você precisa ajustar as configurações para resolver conflitos de dependências:
 
 ```yaml
 version: 1
@@ -38,7 +38,7 @@ frontend:
   phases:
     preBuild:
       commands:
-        - npm ci
+        - npm ci --legacy-peer-deps
     build:
       commands:
         - npm run build
@@ -50,6 +50,8 @@ frontend:
     paths:
       - node_modules/**/*
 ```
+
+> **Importante**: Note a adição da flag `--legacy-peer-deps` no comando `npm ci`. Isso é necessário para resolver conflitos de dependências entre o pacote react-facebook-login (que requer React 16) e a versão atual do React (19) usada no projeto.
 
 ### 5. Configurações avançadas (opcional)
 
@@ -84,6 +86,7 @@ Se encontrar erros durante o build:
 1. Verifique os logs de build no console do Amplify
 2. Certifique-se de que todas as dependências estão instaladas corretamente
 3. Verifique se o script de build está configurado corretamente no package.json
+4. Para erros de conflito de dependências, considere adicionar a flag `--legacy-peer-deps` aos comandos npm
 
 ### Problemas com rotas
 
@@ -91,7 +94,7 @@ Para aplicações com React Router, você pode precisar configurar redirecioname
 
 1. Vá para "Rewrites and redirects"
 2. Adicione uma regra para redirecionar todas as solicitações para index.html:
-   - Source: `</^[^.]+$|\.((?!css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json)\w+)$/>`
+   - Source: `</^[^.]+$|\.(?!css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json)\w+$/>`
    - Target: `/index.html`
    - Type: 200 (Rewrite)
 
@@ -99,3 +102,4 @@ Para aplicações com React Router, você pode precisar configurar redirecioname
 
 - [Documentação do AWS Amplify](https://docs.aws.amazon.com/amplify/)
 - [Melhores práticas para implantação de aplicações React](https://docs.aws.amazon.com/amplify/latest/userguide/deploy-react-app.html)
+- [Resolução de problemas de dependências npm](https://docs.npmjs.com/cli/v8/configuring-npm/package-json#dependencies)
