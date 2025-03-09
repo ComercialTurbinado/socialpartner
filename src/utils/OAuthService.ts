@@ -60,13 +60,13 @@ export const completeFacebookOAuth = async (code: string, appId: string, appSecr
 
 // Instagram OAuth (via Facebook)
 export const initiateInstagramOAuth = (appId: string, redirectUri: string, permissions: string[]) => {
-  // Para o Instagram Basic Display API, os escopos válidos são: user_profile, user_media
+  // Para o Instagram Basic Display API, os escopos válidos atuais são apenas: instagram_graph_user_profile, instagram_graph_user_media
   // Mapeando os escopos internos para os escopos válidos da API
   const scopeMapping: {[key: string]: string} = {
-    'instagram_basic': 'user_profile',
-    'instagram_content_publish': 'user_media',
-    'instagram_manage_comments': 'user_media',
-    'instagram_manage_insights': 'user_media'
+    'instagram_basic': 'instagram_graph_user_profile',
+    'instagram_content_publish': 'instagram_graph_user_media',
+    'instagram_manage_comments': 'instagram_graph_user_media',
+    'instagram_manage_insights': 'instagram_graph_user_media'
   };
   
   // Converter os escopos internos para os escopos válidos da API
