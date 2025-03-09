@@ -13,6 +13,8 @@ import GoogleConnect from './components/GoogleConnect';
 import FacebookPosts from './components/FacebookPosts';
 import TwitterPosts from './components/TwitterPosts';
 import LinkedInPosts from './components/LinkedInPosts';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import TermsOfService from './components/TermsOfService';
 import { Box } from '@mui/material';
 import './App.css';
 
@@ -52,6 +54,8 @@ function App() {
             <Route path="/linkedin/posts" element={<LinkedInPosts />} />
             <Route path="/google-reviews" element={<GoogleReviews />} />
             <Route path="/google" element={<GoogleConnect />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/terms-of-service" element={<TermsOfService />} />
           </Routes>
         </Box>
       </Box>

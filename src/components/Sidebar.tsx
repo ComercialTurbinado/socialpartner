@@ -31,7 +31,9 @@ import {
   RateReview as ReviewsIcon,
   ExpandLess,
   ExpandMore,
-  PhotoLibrary
+  PhotoLibrary,
+  Policy as PolicyIcon
+  
 } from '@mui/icons-material';
 
 interface SidebarProps {
@@ -220,6 +222,53 @@ const Sidebar = ({ open, onToggle }: SidebarProps) => {
             );
           })}
         </List>
+        
+        {/* Footer with Privacy Policy link */}
+        <Box sx={{ mt: 'auto', p: 2 }}>
+          <Divider />
+          <ListItem disablePadding>
+            <ListItemButton
+              component={Link}
+              to="/privacy-policy"
+              sx={{
+                minHeight: 48,
+                px: 2.5,
+              }}
+            >
+              <ListItemIcon
+                sx={{
+                  minWidth: 0,
+                  mr: 2,
+                  justifyContent: 'center',
+                }}
+              >
+                <PolicyIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText primary="Privacy Policy" />
+            </ListItemButton>
+          </ListItem>
+          <ListItem disablePadding>
+            <ListItemButton
+              component={Link}
+              to="/terms-of-service"
+              sx={{
+                minHeight: 48,
+                px: 2.5,
+              }}
+            >
+              <ListItemIcon
+                sx={{
+                  minWidth: 0,
+                  mr: 2,
+                  justifyContent: 'center',
+                }}
+              >
+                <PolicyIcon fontSize="small" />
+              </ListItemIcon>
+              <ListItemText primary="Terms of Service" />
+            </ListItemButton>
+          </ListItem>
+        </Box>
       </Drawer>
     </>
   );
