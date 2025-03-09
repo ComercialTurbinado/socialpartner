@@ -41,6 +41,10 @@ interface InstagramPostWithInteractions extends InstagramMedia {
       period: string;
       values: { value: number }[];
     }>;
+    likers?: Array<{
+      username: string;
+      name?: string;
+    }>;
   };
 }
 
@@ -165,6 +169,36 @@ const InstagramPosts = () => {
                     </Typography>
                   </Box>
                 </Box>
+                
+                {/* Users who liked the post */}
+                {post.interactions?.likers && post.interactions.likers.length > 0 && (
+                  <Box sx={{ mb: 2 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                      <PersonIcon fontSize="small" sx={{ mr: 0.5 }} />
+                      <Typography variant="body2">Liked by:</Typography>
+                    </Box>
+                    <List dense sx={{ bgcolor: 'background.paper', borderRadius: 1 }}>
+                      {post.interactions.likers.slice(0, 5).map((liker, index) => (
+                        <ListItem key={index}>
+                          <ListItemAvatar>
+                            <Avatar>
+                              <PersonIcon />
+                            </Avatar>
+                          </ListItemAvatar>
+                          <ListItemText primary={liker.username} />
+                        </ListItem>
+                      ))}
+                      {post.interactions.likers.length > 5 && (
+                        <ListItem>
+                          <ListItemText 
+                            primary={`+${post.interactions.likers.length - 5} more users`} 
+                            sx={{ color: 'text.secondary' }}
+                          />
+                        </ListItem>
+                      )}
+                    </List>
+                  </Box>
+                )}
                 
                 {/* Hashtags */}
                 {post.interactions?.hashtags && post.interactions.hashtags.length > 0 && (

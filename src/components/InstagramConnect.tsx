@@ -5,15 +5,9 @@ import {
   Card,
   CardContent,
   Button,
-  TextField,
   Alert,
   CircularProgress,
   Divider,
-  List,
-  ListItem,
-  ListItemText,
-  Switch,
-  FormControlLabel,
   Paper
 } from '@mui/material';
 import { Instagram as InstagramIcon } from '@mui/icons-material';
@@ -30,15 +24,17 @@ const InstagramConnect = () => {
   const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [appId, setAppId] = useState('');
-  const [appSecret, setAppSecret] = useState('');
-  const [redirectUri, setRedirectUri] = useState(window.location.origin + '/instagram');
-  const [showConfig, setShowConfig] = useState(false);
   const [profile, setProfile] = useState<SocialProfile | null>(null);
-  const [permissions, setPermissions] = useState<InstagramPermission[]>([
+  const [redirectUri] = useState(window.location.origin + '/instagram');
+  
+  // Hardcoded App ID and Secret
+  const appId = '3826446384273734';
+  const appSecret = 'f6ffd1ccf5451dec1b75a3795867251c';
+  
+  const [permissions] = useState<InstagramPermission[]>([
     {
       name: 'instagram_basic',
-      description: 'Access to basic profile information',
+      description: 'Access to posts and basic profile information',
       enabled: true,
       required: true
     },
@@ -50,17 +46,18 @@ const InstagramConnect = () => {
     },
     {
       name: 'instagram_manage_comments',
-      description: 'Manage comments on your Instagram media',
-      enabled: false,
-      required: false
+      description: 'Access comments and who commented on your posts',
+      enabled: true,
+      required: true
     },
     {
       name: 'instagram_manage_insights',
-      description: 'Access to post and account insights',
-      enabled: false,
-      required: false
+      description: 'Access likes and who interacted with your posts',
+      enabled: true,
+      required: true
     }
   ]);
+
 
   // Check for existing token on component mount
   useEffect(() => {
@@ -84,15 +81,11 @@ const InstagramConnect = () => {
     setError(null);
     
     try {
-      // Get stored credentials from localStorage
-      const storedAppId = localStorage.getItem('instagram_app_id');
-      const storedAppSecret = localStorage.getItem('instagram_app_secret');
+      // Store credentials temporarily in localStorage for the callback
+      localStorage.setItem('instagram_app_id', appId);
+      localStorage.setItem('instagram_app_secret', appSecret);
       
-      if (!storedAppId || !storedAppSecret) {
-        throw new Error('App credentials not found. Please configure the app first.');
-      }
-      
-      const userProfile = await completeInstagramOAuth(code, storedAppId, storedAppSecret, redirectUri);
+      const userProfile = await completeInstagramOAuth(code, appId, appSecret, redirectUri);
       
       // Store the profile and token
       storeToken('instagram', userProfile);
@@ -110,11 +103,6 @@ const InstagramConnect = () => {
   };
 
   const handleConnect = async () => {
-    if (!appId || !appSecret) {
-      setError('App ID and App Secret are required');
-      return;
-    }
-
     setLoading(true);
     setError(null);
 
@@ -132,7 +120,7 @@ const InstagramConnect = () => {
       initiateInstagramOAuth(appId, redirectUri, selectedPermissions);
     } catch (err) {
       console.error('Instagram OAuth error:', err);
-      setError('Failed to connect to Instagram. Please check your credentials and try again.');
+      setError('Failed to connect to Instagram. Please try again.');
       setLoading(false);
     }
   };
@@ -155,14 +143,6 @@ const InstagramConnect = () => {
       setError('Failed to disconnect from Instagram. Please try again.');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handlePermissionChange = (index: number) => {
-    const updatedPermissions = [...permissions];
-    if (!updatedPermissions[index].required) {
-      updatedPermissions[index].enabled = !updatedPermissions[index].enabled;
-      setPermissions(updatedPermissions);
     }
   };
 
@@ -191,28 +171,19 @@ const InstagramConnect = () => {
               <Typography variant="h6">Instagram</Typography>
             </Box>
             <Box>
-              {!connected ? (
-                <Button 
-                  variant="outlined" 
-                  color="primary" 
-                  onClick={() => setShowConfig(!showConfig)}
-                  sx={{ mr: 1 }}
-                >
-                  Configure
-                </Button>
-              ) : null}
               <Button
                 variant={connected ? 'outlined' : 'contained'}
                 color={connected ? 'error' : 'primary'}
                 onClick={connected ? handleDisconnect : handleConnect}
-                disabled={loading || (!connected && !showConfig)}
+                disabled={loading}
+                startIcon={!loading && !connected ? <InstagramIcon /> : undefined}
               >
                 {loading ? (
                   <CircularProgress size={24} />
                 ) : connected ? (
                   'Disconnect'
                 ) : (
-                  'Connect'
+                  'Connect with Instagram'
                 )}
               </Button>
             </Box>
@@ -236,71 +207,31 @@ const InstagramConnect = () => {
             </Box>
           )}
 
-          {showConfig && !connected && (
+          {!connected && (
             <Box sx={{ mt: 2 }}>
-              <Typography variant="subtitle1" gutterBottom>
-                Instagram App Configuration
-              </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Note: Instagram API access requires a Facebook Developer account and a Facebook app with Instagram Basic Display API enabled.
+                Click the "Connect with Instagram" button above to authorize this application to access your Instagram business account.
+                Make sure your Facebook account is connected to an Instagram business or creator account.
               </Typography>
-              <TextField
-                label="App ID"
-                variant="outlined"
-                fullWidth
-                margin="normal"
-                value={appId}
-                onChange={(e) => setAppId(e.target.value)}
-              />
-              <TextField
-                label="App Secret"
-                variant="outlined"
-                fullWidth
-                margin="normal"
-                type="password"
-                value={appSecret}
-                onChange={(e) => setAppSecret(e.target.value)}
-              />
-              <TextField
-                label="Redirect URI"
-                variant="outlined"
-                fullWidth
-                margin="normal"
-                value={redirectUri}
-                onChange={(e) => setRedirectUri(e.target.value)}
-                helperText="This must match the redirect URI configured in your Instagram app"
-              />
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 2 }}>
-                You can find your App ID and App Secret in the Facebook Developer Portal. Instagram API access requires a Facebook Developer account and a Facebook app with Instagram Basic Display API enabled.
-              </Typography>
-
+              
               <Divider sx={{ my: 2 }} />
               
               <Typography variant="subtitle1" gutterBottom>
-                Permissions
+                Required Permissions
               </Typography>
-              <Paper variant="outlined" sx={{ mt: 1 }}>
-                <List>
-                  {permissions.map((permission, index) => (
-                    <ListItem key={permission.name} divider={index < permissions.length - 1}>
-                      <ListItemText
-                        primary={permission.name}
-                        secondary={permission.description}
-                      />
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            checked={permission.enabled}
-                            onChange={() => handlePermissionChange(index)}
-                            disabled={permission.required}
-                          />
-                        }
-                        label={permission.required ? "Required" : "Optional"}
-                        labelPlacement="start"
-                      />
-                    </ListItem>
-                  ))}
-                </List>
+              <Paper variant="outlined" sx={{ p: 2, mt: 1 }}>
+                <Typography variant="body2" paragraph>
+                  • <strong>instagram_basic</strong>: Access to posts and basic profile information
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • <strong>instagram_content_publish</strong>: Ability to publish content to Instagram
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • <strong>instagram_manage_comments</strong>: Access comments and who commented on your posts
+                </Typography>
+                <Typography variant="body2" paragraph>
+                  • <strong>instagram_manage_insights</strong>: Access likes and who interacted with your posts
+                </Typography>
               </Paper>
             </Box>
           )}

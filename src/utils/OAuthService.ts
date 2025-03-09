@@ -58,67 +58,83 @@ export const completeFacebookOAuth = async (code: string, appId: string, appSecr
   }
 };
 
-// Instagram OAuth (via Facebook)
+// Instagram OAuth (via Facebook Graph API)
 export const initiateInstagramOAuth = (appId: string, redirectUri: string, permissions: string[]) => {
-  // Para o Instagram Graph API, mapeando os escopos internos para os escopos válidos da API
-  // instagram_basic - Listar seus posts
-  // instagram_manage_comments - Ver interações (comentários) e quem comentou nos seus posts
-  // instagram_manage_insights - Ver curtidas nos seus posts e quem curtiu seus posts
-  const scopeMapping: {[key: string]: string} = {
-    'instagram_basic': 'user_profile,user_media', // Acesso ao perfil e posts do usuário
-    'instagram_content_publish': 'user_media,publish_video,publish_media', // Publicar conteúdo
-    'instagram_manage_comments': 'user_media,comments', // Gerenciar comentários
-    'instagram_manage_insights': 'user_media,insights' // Acessar insights e métricas
-  };
+  // Instagram Graph API uses Facebook's OAuth system
+  // Required permissions for Instagram Graph API:
+  // instagram_basic - Access to user's posts
+  // instagram_manage_comments - Access to comments and who commented
+  // instagram_manage_insights - Access to likes and who liked posts
   
-  // Converter os escopos internos para os escopos válidos da API
-  const validPermissions = permissions.map(p => scopeMapping[p] || p);
+  // Make sure we have the required permissions
+  const requiredPermissions = ['instagram_basic'];
+  const allPermissions = [...new Set([...requiredPermissions, ...permissions])];
   
-  // Remover duplicatas
-  const uniquePermissions = [...new Set(validPermissions)];
-  
-  const scope = uniquePermissions.join(',');
-  const authUrl = `https://api.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code`;
+  const scope = allPermissions.join(',');
+  const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code`;
   window.location.href = authUrl;
 };
 
 export const completeInstagramOAuth = async (code: string, appId: string, appSecret: string, redirectUri: string): Promise<SocialProfile> => {
   try {
-    // Exchange code for access token
-    const tokenResponse = await axios.post(
-      'https://api.instagram.com/oauth/access_token',
-      {
-        client_id: appId,
-        client_secret: appSecret,
-        grant_type: 'authorization_code',
-        redirect_uri: redirectUri,
-        code
-      },
-      {
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded'
+    // Exchange code for access token using Facebook Graph API
+    const tokenResponse = await axios.get(
+      `https://graph.facebook.com/v18.0/oauth/access_token?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&client_secret=${appSecret}&code=${code}`
+    );
+    
+    // @ts-ignore
+    const { access_token, expires_in } = tokenResponse.data;
+    
+    // Exchange short-lived token for long-lived token (60 days)
+    const longLivedTokenResponse = await axios.get(
+      `https://graph.facebook.com/v18.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${access_token}`
+    );
+    
+    const longLivedToken = longLivedTokenResponse.data.access_token;
+    const longExpiresIn = longLivedTokenResponse.data.expires_in;
+    const expiresAt = longExpiresIn ? Date.now() + longExpiresIn * 1000 : undefined;
+    
+    // Get Instagram business account ID
+    const accountsResponse = await axios.get(
+      `https://graph.facebook.com/v18.0/me/accounts?access_token=${longLivedToken}`
+    );
+    
+    // Find pages with Instagram business accounts
+    const pages = accountsResponse.data.data || [];
+    let instagramBusinessAccountId = null;
+    let username = '';
+    
+    // Check each page for an Instagram business account
+    for (const page of pages) {
+      try {
+        const pageResponse = await axios.get(
+          `https://graph.facebook.com/v18.0/${page.id}?fields=instagram_business_account{id,username}&access_token=${longLivedToken}`
+        );
+        
+        if (pageResponse.data.instagram_business_account) {
+          instagramBusinessAccountId = pageResponse.data.instagram_business_account.id;
+          username = pageResponse.data.instagram_business_account.username;
+          break;
         }
+      } catch (err) {
+        console.warn(`Could not get Instagram business account for page ${page.id}:`, err);
       }
-    );
+    }
     
-    const { access_token, user_id } = tokenResponse.data;
-    
-    // Get user profile
-    const profileResponse = await axios.get(
-      `https://graph.instagram.com/${user_id}?fields=id,username&access_token=${access_token}`
-    );
-    
-    const profile = profileResponse.data;
+    if (!instagramBusinessAccountId) {
+      throw new Error('No Instagram business account found. Please make sure your Facebook account is connected to an Instagram business or creator account.');
+    }
     
     return {
-      id: profile.id,
-      name: profile.username,
-      username: profile.username,
-      accessToken: access_token
+      id: instagramBusinessAccountId,
+      name: username,
+      username: username,
+      accessToken: longLivedToken,
+      expiresAt
     };
   } catch (error) {
     console.error('Instagram OAuth error:', error);
-    throw new Error('Failed to complete Instagram authentication');
+    throw new Error('Failed to complete Instagram authentication. Make sure you have a business or creator Instagram account connected to your Facebook page.');
   }
 };
 
@@ -277,6 +293,65 @@ function generateRandomString(length: number): string {
   }
   return text;
 }
+
+// Function to refresh Instagram access token (long-lived token lasts 60 days)
+export const refreshInstagramToken = async (): Promise<boolean> => {
+  const profile = getStoredToken('instagram');
+  if (!profile || !profile.accessToken) return false;
+  
+  try {
+    // Get stored credentials from localStorage
+    const appId = localStorage.getItem('instagram_app_id');
+    const appSecret = localStorage.getItem('instagram_app_secret');
+    
+    if (!appId || !appSecret) {
+      throw new Error('App credentials not found');
+    }
+    
+    // Exchange current token for a new long-lived token
+    const response = await axios.get(
+      `https://graph.facebook.com/v18.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${profile.accessToken}`
+    );
+    
+    const { access_token, expires_in } = response.data;
+    const expiresAt = expires_in ? Date.now() + expires_in * 1000 : undefined;
+    
+    // Update the stored profile with new token
+    const updatedProfile = {
+      ...profile,
+      accessToken: access_token,
+      expiresAt
+    };
+    
+    storeToken('instagram', updatedProfile);
+    return true;
+  } catch (error) {
+    console.error('Error refreshing Instagram token:', error);
+    return false;
+  }
+};
+
+// Check if token needs refresh (if it expires in less than 7 days)
+export const checkAndRefreshToken = async (platform: string): Promise<SocialProfile | null> => {
+  const profile = getStoredToken(platform);
+  if (!profile) return null;
+  
+  // If token expires in less than 7 days, refresh it
+  const sevenDaysInMs = 7 * 24 * 60 * 60 * 1000;
+  const shouldRefresh = profile.expiresAt && (profile.expiresAt - Date.now() < sevenDaysInMs);
+  
+  if (shouldRefresh) {
+    if (platform === 'instagram') {
+      const success = await refreshInstagramToken();
+      if (success) {
+        return getStoredToken(platform);
+      }
+    }
+    // Add other platforms' refresh logic here as needed
+  }
+  
+  return profile;
+};
 
 // Token storage in localStorage with encryption
 export const storeToken = (platform: string, profile: SocialProfile): void => {
