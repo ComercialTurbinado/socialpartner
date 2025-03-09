@@ -53,20 +53,24 @@ const menuItems = [
 
 const socialItems = [
   { text: 'Instagram', icon: <InstagramIcon />, path: '/instagram', subItems: [
-    { text: 'Interactions', icon: <PhotoLibrary />, path: '/instagram/' },
-    { text: 'Posts', icon: <PhotoLibrary />, path: '/instagram/posts' }
+    { text: 'Connect', icon: <PhotoLibrary />, path: '/instagram' },
+    { text: 'Posts', icon: <PhotoLibrary />, path: '/instagram/posts' },
+    { text: 'Interactions', icon: <PhotoLibrary />, path: '/instagram/interactions' }
   ] },
   { text: 'Facebook', icon: <FacebookIcon />, path: '/facebook', subItems: [
-    { text: 'Interactions', icon: <PhotoLibrary />, path: '/facebook/' },
-    { text: 'Posts', icon: <PhotoLibrary />, path: '/facebook/posts' }
+    { text: 'Connect', icon: <PhotoLibrary />, path: '/facebook' },
+    { text: 'Posts', icon: <PhotoLibrary />, path: '/facebook/posts' },
+    { text: 'Interactions', icon: <PhotoLibrary />, path: '/facebook/interactions' }
   ] },
   { text: 'Twitter', icon: <TwitterIcon />, path: '/twitter', subItems: [
-    { text: 'Interactions', icon: <PhotoLibrary />, path: '/twitter/' },
-    { text: 'Posts', icon: <PhotoLibrary />, path: '/twitter/posts' }
+    { text: 'Connect', icon: <PhotoLibrary />, path: '/twitter' },
+    { text: 'Posts', icon: <PhotoLibrary />, path: '/twitter/posts' },
+    { text: 'Interactions', icon: <PhotoLibrary />, path: '/twitter/interactions' }
   ] },
   { text: 'LinkedIn', icon: <LinkedInIcon />, path: '/linkedin', subItems: [
-    { text: 'Interactions', icon: <PhotoLibrary />, path: '/linkedin/' },
-    { text: 'Posts', icon: <PhotoLibrary />, path: '/linkedin/posts' }
+    { text: 'Connect', icon: <PhotoLibrary />, path: '/linkedin' },
+    { text: 'Posts', icon: <PhotoLibrary />, path: '/linkedin/posts' },
+    { text: 'Interactions', icon: <PhotoLibrary />, path: '/linkedin/interactions' }
   ] },
   { text: 'Google Reviews', icon: <ReviewsIcon />, path: '/google-reviews' },
 ];
