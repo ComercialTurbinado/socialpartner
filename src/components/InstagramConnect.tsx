@@ -25,7 +25,7 @@ const InstagramConnect = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState<SocialProfile | null>(null);
-  const [redirectUri] = useState('https://main.d12gqpnoazw6w2.amplifyapp.com');
+  const [redirectUri] = useState('https://main.d12gqpnoazw6w2.amplifyapp.com/auth/callback');
   
   // Hardcoded App ID and Secret
   const appId = '3826446384273734';
