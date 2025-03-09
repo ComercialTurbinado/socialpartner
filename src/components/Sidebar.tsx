@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Box,
@@ -11,7 +12,8 @@ import {
   Divider,
   Typography,
   useMediaQuery,
-  useTheme
+  useTheme,
+  Collapse
 } from '@mui/material';
 import {
   Dashboard as DashboardIcon,
@@ -26,7 +28,10 @@ import {
   Twitter as TwitterIcon,
   LinkedIn as LinkedInIcon,
   EmojiEvents as RewardsIcon,
-  RateReview as ReviewsIcon
+  RateReview as ReviewsIcon,
+  ExpandLess,
+  ExpandMore,
+  PhotoLibrary
 } from '@mui/icons-material';
 
 interface SidebarProps {
@@ -47,7 +52,9 @@ const menuItems = [
 ];
 
 const socialItems = [
-  { text: 'Instagram', icon: <InstagramIcon />, path: '/instagram' },
+  { text: 'Instagram', icon: <InstagramIcon />, path: '/instagram', subItems: [
+    { text: 'Posts & Interactions', icon: <PhotoLibrary />, path: '/instagram/posts' }
+  ] },
   { text: 'Facebook', icon: <FacebookIcon />, path: '/facebook' },
   { text: 'Twitter', icon: <TwitterIcon />, path: '/twitter' },
   { text: 'LinkedIn', icon: <LinkedInIcon />, path: '/linkedin' },
@@ -140,29 +147,64 @@ const Sidebar = ({ open, onToggle }: SidebarProps) => {
           </Typography>
         </Box>
         <List>
-          {socialItems.map((item) => (
-            <ListItem key={item.text} disablePadding>
-              <ListItemButton
-                component={Link}
-                to={item.path}
-                sx={{
-                  minHeight: 48,
-                  px: 2.5,
-                }}
-              >
-                <ListItemIcon
-                  sx={{
-                    minWidth: 0,
-                    mr: 2,
-                    justifyContent: 'center',
-                  }}
-                >
-                  {item.icon}
-                </ListItemIcon>
-                <ListItemText primary={item.text} />
-              </ListItemButton>
-            </ListItem>
-          ))}
+          {socialItems.map((item) => {
+            const [open, setOpen] = useState(false);
+            const hasSubItems = item.subItems && item.subItems.length > 0;
+            
+            return (
+              <Box key={item.text}>
+                <ListItem disablePadding>
+                  <ListItemButton
+                    component={hasSubItems ? 'div' : Link}
+                    to={hasSubItems ? undefined : item.path}
+                    onClick={hasSubItems ? () => setOpen(!open) : undefined}
+                    sx={{
+                      minHeight: 48,
+                      px: 2.5,
+                    }}
+                  >
+                    <ListItemIcon
+                      sx={{
+                        minWidth: 0,
+                        mr: 2,
+                        justifyContent: 'center',
+                      }}
+                    >
+                      {item.icon}
+                    </ListItemIcon>
+                    <ListItemText primary={item.text} />
+                    {hasSubItems && (open ? <ExpandLess /> : <ExpandMore />)}
+                  </ListItemButton>
+                </ListItem>
+                
+                {hasSubItems && (
+                  <Collapse in={open} timeout="auto" unmountOnExit>
+                    <List component="div" disablePadding>
+                      {item.subItems.map((subItem) => (
+                        <ListItemButton
+                          key={subItem.text}
+                          component={Link}
+                          to={subItem.path}
+                          sx={{ pl: 4 }}
+                        >
+                          <ListItemIcon
+                            sx={{
+                              minWidth: 0,
+                              mr: 2,
+                              justifyContent: 'center',
+                            }}
+                          >
+                            {subItem.icon}
+                          </ListItemIcon>
+                          <ListItemText primary={subItem.text} />
+                        </ListItemButton>
+                      ))}
+                    </List>
+                  </Collapse>
+                )}
+              </Box>
+            );
+          })}
         </List>
       </Drawer>
     </>

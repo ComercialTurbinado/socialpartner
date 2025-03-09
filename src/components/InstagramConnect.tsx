@@ -219,9 +219,21 @@ const InstagramConnect = () => {
           </Box>
 
           {connected && (
-            <Alert severity="success" sx={{ mb: 2 }}>
-              Successfully connected to Instagram
-            </Alert>
+            <Box>
+              <Alert severity="success" sx={{ mb: 2 }}>
+                Successfully connected to Instagram
+              </Alert>
+              <Button
+                variant="contained"
+                color="primary"
+                component="a"
+                href="/instagram/posts"
+                sx={{ mb: 2 }}
+                startIcon={<InstagramIcon />}
+              >
+                View Instagram Posts & Interactions
+              </Button>
+            </Box>
           )}
 
           {showConfig && !connected && (

@@ -60,7 +60,22 @@ export const completeFacebookOAuth = async (code: string, appId: string, appSecr
 
 // Instagram OAuth (via Facebook)
 export const initiateInstagramOAuth = (appId: string, redirectUri: string, permissions: string[]) => {
-  const scope = permissions.join(',');
+  // Para o Instagram Basic Display API, os escopos válidos são: user_profile, user_media
+  // Mapeando os escopos internos para os escopos válidos da API
+  const scopeMapping: {[key: string]: string} = {
+    'instagram_basic': 'user_profile',
+    'instagram_content_publish': 'user_media',
+    'instagram_manage_comments': 'user_media',
+    'instagram_manage_insights': 'user_media'
+  };
+  
+  // Converter os escopos internos para os escopos válidos da API
+  const validPermissions = permissions.map(p => scopeMapping[p] || p);
+  
+  // Remover duplicatas
+  const uniquePermissions = [...new Set(validPermissions)];
+  
+  const scope = uniquePermissions.join(',');
   const authUrl = `https://api.instagram.com/oauth/authorize?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code`;
   window.location.href = authUrl;
 };

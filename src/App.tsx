@@ -5,6 +5,7 @@ import Sidebar from './components/Sidebar';
 import SocialMediaConnect from './components/SocialMediaConnect';
 import FacebookConnect from './components/FacebookConnect';
 import InstagramConnect from './components/InstagramConnect';
+import InstagramPosts from './components/InstagramPosts';
 import TwitterConnect from './components/TwitterConnect';
 import LinkedInConnect from './components/LinkedInConnect';
 import GoogleReviews from './components/GoogleReviews';
@@ -40,6 +41,7 @@ function App() {
             <Route path="/social-media" element={<SocialMediaConnect />} />
             <Route path="/facebook" element={<FacebookConnect />} />
             <Route path="/instagram" element={<InstagramConnect />} />
+            <Route path="/instagram/posts" element={<InstagramPosts />} />
             <Route path="/twitter" element={<TwitterConnect />} />
             <Route path="/linkedin" element={<LinkedInConnect />} />
             <Route path="/google-reviews" element={<GoogleReviews />} />
