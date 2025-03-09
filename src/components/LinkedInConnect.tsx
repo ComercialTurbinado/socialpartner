@@ -74,7 +74,6 @@ const LinkedInConnect = () => {
     // Check for OAuth code in URL (after redirect back from LinkedIn)
     const urlParams = new URLSearchParams(window.location.search);
     const code = urlParams.get('code');
-    const state = urlParams.get('state');
     
     if (code && !connected) {
       handleOAuthCallback(code);

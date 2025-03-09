@@ -10,11 +10,9 @@ import {
   CircularProgress,
   Paper
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
 import { storeToken, getStoredToken, removeStoredToken } from '../utils/OAuthService';
 
 const GoogleConnect = () => {
-  const navigate = useNavigate();
   const [clientId, setClientId] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,13 +36,10 @@ const GoogleConnect = () => {
 
     // Check for OAuth callback in URL
     const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
-    const state = urlParams.get('state');
-    
-    if (code && state) {
+    if (urlParams.get('code') && urlParams.get('state')) {
       const storedState = sessionStorage.getItem('google_oauth_state');
-      if (state === storedState) {
-        handleOAuthCallback(code);
+      if (urlParams.get('state') === storedState) {
+        handleOAuthCallback();
       } else {
         setError('Invalid state parameter. Authentication failed.');
       }
@@ -88,14 +83,13 @@ const GoogleConnect = () => {
     }
   };
 
-  const handleOAuthCallback = async (code: string) => {
+  const handleOAuthCallback = async () => {
     setLoading(true);
     setError(null);
 
     try {
       // In a real implementation, you would exchange the code for tokens
       // This would typically be done on a backend to keep client_secret secure
-      const redirectUri = `${window.location.origin}/google`;
       
       // Simulate token exchange and profile fetch
       // In production, replace with actual API calls to Google

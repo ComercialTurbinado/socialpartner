@@ -14,8 +14,7 @@ import {
   ListItemText,
   Switch,
   FormControlLabel,
-  Paper,
-  Avatar
+  Paper
 } from '@mui/material';
 import { Instagram as InstagramIcon } from '@mui/icons-material';
 import { initiateInstagramOAuth, completeInstagramOAuth, storeToken, getStoredToken, removeStoredToken, SocialProfile } from '../utils/OAuthService';
