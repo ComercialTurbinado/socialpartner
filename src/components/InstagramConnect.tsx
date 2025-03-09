@@ -28,8 +28,8 @@ const InstagramConnect = () => {
   const [redirectUri] = useState('https://main.d12gqpnoazw6w2.amplifyapp.com/auth/callback');
   
   // Hardcoded App ID and Secret
-  const appId = '3826446384273734';
-  const appSecret = 'f6ffd1ccf5451dec1b75a3795867251c';
+  const appId = '1175934413920106';
+  const appSecret = 'f342e1db5dc22751260cb6cddce2adab';
   
   const [permissions] = useState<InstagramPermission[]>([
     {
