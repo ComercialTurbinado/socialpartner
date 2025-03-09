@@ -53,11 +53,21 @@ const menuItems = [
 
 const socialItems = [
   { text: 'Instagram', icon: <InstagramIcon />, path: '/instagram', subItems: [
-    { text: 'Posts & Interactions', icon: <PhotoLibrary />, path: '/instagram/posts' }
+    { text: 'Interactions', icon: <PhotoLibrary />, path: '/instagram/' },
+    { text: 'Posts', icon: <PhotoLibrary />, path: '/instagram/posts' }
   ] },
-  { text: 'Facebook', icon: <FacebookIcon />, path: '/facebook' },
-  { text: 'Twitter', icon: <TwitterIcon />, path: '/twitter' },
-  { text: 'LinkedIn', icon: <LinkedInIcon />, path: '/linkedin' },
+  { text: 'Facebook', icon: <FacebookIcon />, path: '/facebook', subItems: [
+    { text: 'Interactions', icon: <PhotoLibrary />, path: '/facebook/' },
+    { text: 'Posts', icon: <PhotoLibrary />, path: '/facebook/posts' }
+  ] },
+  { text: 'Twitter', icon: <TwitterIcon />, path: '/twitter', subItems: [
+    { text: 'Interactions', icon: <PhotoLibrary />, path: '/twitter/' },
+    { text: 'Posts', icon: <PhotoLibrary />, path: '/twitter/posts' }
+  ] },
+  { text: 'LinkedIn', icon: <LinkedInIcon />, path: '/linkedin', subItems: [
+    { text: 'Interactions', icon: <PhotoLibrary />, path: '/linkedin/' },
+    { text: 'Posts', icon: <PhotoLibrary />, path: '/linkedin/posts' }
+  ] },
   { text: 'Google Reviews', icon: <ReviewsIcon />, path: '/google-reviews' },
 ];
 

@@ -10,6 +10,9 @@ import TwitterConnect from './components/TwitterConnect';
 import LinkedInConnect from './components/LinkedInConnect';
 import GoogleReviews from './components/GoogleReviews';
 import GoogleConnect from './components/GoogleConnect';
+import FacebookPosts from './components/FacebookPosts';
+import TwitterPosts from './components/TwitterPosts';
+import LinkedInPosts from './components/LinkedInPosts';
 import { Box } from '@mui/material';
 import './App.css';
 
@@ -40,10 +43,13 @@ function App() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/social-media" element={<SocialMediaConnect />} />
             <Route path="/facebook" element={<FacebookConnect />} />
+            <Route path="/facebook/posts" element={<FacebookPosts />} />
             <Route path="/instagram" element={<InstagramConnect />} />
             <Route path="/instagram/posts" element={<InstagramPosts />} />
             <Route path="/twitter" element={<TwitterConnect />} />
+            <Route path="/twitter/posts" element={<TwitterPosts />} />
             <Route path="/linkedin" element={<LinkedInConnect />} />
+            <Route path="/linkedin/posts" element={<LinkedInPosts />} />
             <Route path="/google-reviews" element={<GoogleReviews />} />
             <Route path="/google" element={<GoogleConnect />} />
           </Routes>
