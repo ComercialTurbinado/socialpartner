@@ -25,10 +25,10 @@ const InstagramConnect = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [profile, setProfile] = useState<SocialProfile | null>(null);
-  const [redirectUri] = useState('https://main.d12gqpnoazw6w2.amplifyapp.com/auth/callback');
+  const [redirectUri] = useState('https://main.d12gqpnoazw6w2.amplifyapp.com/instagram');
   
   // Hardcoded App ID and Secret
-  const appId = '3826446384273734';
+  const appId = '1175934413920106';
   const appSecret = 'f6ffd1ccf5451dec1b75a3795867251c';
   
   const [permissions] = useState<InstagramPermission[]>([
@@ -116,8 +116,17 @@ const InstagramConnect = () => {
         .filter(p => p.enabled)
         .map(p => p.name);
       
-      // Initiate OAuth flow - this will redirect the user
-      initiateInstagramOAuth(appId, redirectUri, selectedPermissions);
+      // Initiate OAuth flow with direct Instagram authorization
+      const scope = [
+        'instagram_business_basic',
+        'instagram_business_manage_messages',
+        'instagram_business_manage_comments',
+        'instagram_business_content_publish',
+        'instagram_business_manage_insights'
+      ].join('%2C');
+      
+      const authUrl = `https://www.instagram.com/oauth/authorize?enable_fb_login=0&force_authentication=1&client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}`;
+      window.location.href = authUrl;
     } catch (err) {
       console.error('Instagram OAuth error:', err);
       setError('Failed to connect to Instagram. Please try again.');
