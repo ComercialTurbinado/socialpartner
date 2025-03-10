@@ -11,7 +11,7 @@ import {
   Paper
 } from '@mui/material';
 import { Instagram as InstagramIcon } from '@mui/icons-material';
-import { initiateInstagramOAuth, completeInstagramOAuth, storeToken, getStoredToken, removeStoredToken, SocialProfile } from '../utils/OAuthService';
+import { completeInstagramOAuth, storeToken, getStoredToken, removeStoredToken, SocialProfile } from '../utils/OAuthService';
 
 interface InstagramPermission {
   name: string;
@@ -111,19 +111,27 @@ const InstagramConnect = () => {
       localStorage.setItem('instagram_app_id', appId);
       localStorage.setItem('instagram_app_secret', appSecret);
       
-      // Get selected permissions
+      // Get selected permissions and map them to Instagram business permissions
       const selectedPermissions = permissions
         .filter(p => p.enabled)
-        .map(p => p.name);
+        .map(p => {
+          // Map basic permissions to their business counterparts
+          switch(p.name) {
+            case 'instagram_basic':
+              return 'instagram_business_basic';
+            case 'instagram_content_publish':
+              return 'instagram_business_content_publish';
+            case 'instagram_manage_comments':
+              return 'instagram_business_manage_comments';
+            case 'instagram_manage_insights':
+              return 'instagram_business_manage_insights';
+            default:
+              return p.name;
+          }
+        });
       
-      // Initiate OAuth flow with direct Instagram authorization
-      const scope = [
-        'instagram_business_basic',
-        'instagram_business_manage_messages',
-        'instagram_business_manage_comments',
-        'instagram_business_content_publish',
-        'instagram_business_manage_insights'
-      ].join('%2C');
+      // Use the mapped permissions for the scope
+      const scope = selectedPermissions.join('%2C');
       
       const authUrl = `https://www.instagram.com/oauth/authorize?enable_fb_login=0&force_authentication=1&client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}`;
       window.location.href = authUrl;
