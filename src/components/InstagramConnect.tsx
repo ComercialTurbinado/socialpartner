@@ -106,7 +106,13 @@ const InstagramConnect = () => {
       sessionStorage.removeItem('instagram_oauth_state');
     } catch (err: any) {
       console.error('Instagram OAuth callback error:', err);
-      setError(err.message || 'Failed to complete Instagram authentication. Please try again.');
+      
+      // Check if this is the specific business account error
+      if (err.message && err.message.includes('No Instagram business account found')) {
+        setError('No Instagram business account found. You must have an Instagram business or creator account connected to a Facebook page.');
+      } else {
+        setError(err.message || 'Failed to complete Instagram authentication. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -169,9 +175,45 @@ const InstagramConnect = () => {
       </Typography>
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
-          {error}
-        </Alert>
+        <Box>
+          <Alert severity="error" sx={{ mb: 2 }}>
+            {error}
+          </Alert>
+          
+          {error.includes('No Instagram business account found') && (
+            <Paper elevation={2} sx={{ p: 2, mb: 2, bgcolor: '#f5f5f5' }}>
+              <Typography variant="h6" gutterBottom>
+                How to Fix This Issue:
+              </Typography>
+              <Typography variant="body2" paragraph>
+                This error occurs because Instagram's API requires a business or creator account that is linked to a Facebook page.
+              </Typography>
+              <Typography variant="subtitle2" gutterBottom>
+                Follow these steps to convert your Instagram account:
+              </Typography>
+              <ol>
+                <li>
+                  <Typography variant="body2">Open the Instagram app on your mobile device</Typography>
+                </li>
+                <li>
+                  <Typography variant="body2">Go to your profile and tap the hamburger menu (≡) in the top right</Typography>
+                </li>
+                <li>
+                  <Typography variant="body2">Tap Settings and privacy, then Account type and tools</Typography>
+                </li>
+                <li>
+                  <Typography variant="body2">Select Switch to Professional Account and choose Business or Creator</Typography>
+                </li>
+                <li>
+                  <Typography variant="body2">Follow the prompts to connect to your Facebook page</Typography>
+                </li>
+                <li>
+                  <Typography variant="body2">If you don't have a Facebook page, you'll need to create one first</Typography>
+                </li>
+              </ol>
+            </Paper>
+          )}
+        </Box>
       )}
 
       <Card sx={{ mb: 3 }}>
@@ -222,8 +264,29 @@ const InstagramConnect = () => {
             <Box sx={{ mt: 2 }}>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 Click the "Connect with Instagram" button above to authorize this application to access your Instagram business account.
-                Make sure your Facebook account is connected to an Instagram business or creator account.
+                <strong>Important:</strong> You must have an Instagram business or creator account connected to your Facebook page.
               </Typography>
+              
+              <Alert severity="info" sx={{ mb: 2 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  How to set up an Instagram Business Account:
+                </Typography>
+                <Typography variant="body2">
+                  1. Go to your Instagram profile and tap the hamburger menu (≡)
+                </Typography>
+                <Typography variant="body2">
+                  2. Tap Settings and privacy, then Account type and tools
+                </Typography>
+                <Typography variant="body2">
+                  3. Select Switch to Professional Account and follow the steps
+                </Typography>
+                <Typography variant="body2">
+                  4. Choose Business (or Creator), then connect to your Facebook page
+                </Typography>
+                <Typography variant="body2">
+                  5. Return here and try connecting again
+                </Typography>
+              </Alert>
               
               <Divider sx={{ my: 2 }} />
               

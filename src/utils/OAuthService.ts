@@ -125,7 +125,7 @@ export const completeInstagramOAuth = async (code: string, appId: string, appSec
     }
     
     if (!instagramBusinessAccountId) {
-      throw new Error('No Instagram business account found. Please make sure your Facebook account is connected to an Instagram business or creator account.');
+      throw new Error('No Instagram business account found. Please make sure your Facebook account is connected to an Instagram business or creator account. You need to convert your Instagram account to a Business or Creator account and link it to your Facebook page.');
     }
     
     return {
