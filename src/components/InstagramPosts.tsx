@@ -22,6 +22,7 @@ import {
   Person as PersonIcon
 } from '@mui/icons-material';
 import { getUserMediaWithInteractions, InstagramMedia } from '../utils/InstagramService';
+import { getStoredToken } from '../utils/OAuthService';
 
 interface InstagramPostWithInteractions extends InstagramMedia {
   interactions?: {
@@ -64,7 +65,13 @@ const InstagramPosts = () => {
     try {
       // First check if user has a valid Instagram business account
       const profile = getStoredToken('instagram');
-      if (!profile || !profile.id) {
+      if (!profile) {
+        throw new Error('Not connected to Instagram. Please connect your Instagram account first.');
+      }
+      
+      // Check if we have a valid Instagram business account ID
+      // The ID is stored directly in the profile object by the completeInstagramOAuth function
+      if (!profile.id) {
         throw new Error('No Instagram business account found. Please make sure you have a business or creator account connected to a Facebook page.');
       }
       

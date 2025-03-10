@@ -12,6 +12,7 @@ import {
 } from '@mui/material';
 import { Instagram as InstagramIcon } from '@mui/icons-material';
 import { completeInstagramOAuth, storeToken, getStoredToken, removeStoredToken, SocialProfile, initiateInstagramOAuth } from '../utils/OAuthService';
+import InstagramAccountStatus from './InstagramAccountStatus';
 
 interface InstagramPermission {
   name: string;
@@ -272,36 +273,36 @@ const InstagramConnect = () => {
           {!connected && (
             <Box sx={{ mt: 2 }}>
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Click the "Connect with Instagram" button above to authorize this application to access your Instagram business account.
-                <strong>Important:</strong> You must have an Instagram business or creator account connected to your Facebook page.
+                Clique no botão "Connect with Instagram" acima para autorizar esta aplicação a acessar sua conta comercial do Instagram.
+                <strong>Importante:</strong> Você deve ter uma conta comercial ou de criador do Instagram conectada à sua página do Facebook.
               </Typography>
               
               <Alert severity="info" sx={{ mb: 2 }}>
                 <Typography variant="subtitle2" gutterBottom>
-                  How to set up an Instagram Business Account:
+                  Como configurar uma Conta Comercial do Instagram:
                 </Typography>
                 <Typography variant="body2">
-                  1. Go to your Instagram profile and tap the hamburger menu (≡)
+                  1. Acesse seu perfil do Instagram e toque no menu hambúrguer (≡)
                 </Typography>
                 <Typography variant="body2">
-                  2. Tap Settings and privacy, then Account type and tools
+                  2. Toque em Configurações e privacidade, depois em Tipo de conta e ferramentas
                 </Typography>
                 <Typography variant="body2">
-                  3. Select Switch to Professional Account and follow the steps
+                  3. Selecione Mudar para Conta Profissional e siga os passos
                 </Typography>
                 <Typography variant="body2">
-                  4. Choose Business (or Creator), then connect to your Facebook page
+                  4. Escolha Comercial (ou Criador), depois conecte à sua página do Facebook
                 </Typography>
                 <Typography variant="body2">
-                  5. Return here and try connecting again
+                  5. Retorne aqui e tente conectar novamente
                 </Typography>
                 <Typography variant="body2" sx={{ mt: 1 }}>
-                  If you received an error about "No Instagram business account found", please follow these steps:
+                  Se você recebeu um erro sobre "Nenhuma conta comercial do Instagram encontrada", por favor siga estes passos:
                   <ol>
-                    <li>Go to your Facebook Page</li>
-                    <li>Click on Settings > Instagram</li>
-                    <li>Connect your Instagram account to your Facebook Page</li>
-                    <li>Make sure your Instagram account is switched to a Business or Creator account</li>
+                    <li>Acesse sua Página do Facebook</li>
+                    <li>Clique em Configurações - Instagram</li>
+                    <li>Conecte sua conta do Instagram à sua Página do Facebook</li>
+                    <li>Certifique-se de que sua conta do Instagram esteja configurada como conta Comercial ou de Criador</li>
                   </ol>
                 </Typography>
               </Alert>
@@ -309,20 +310,20 @@ const InstagramConnect = () => {
               <Divider sx={{ my: 2 }} />
               
               <Typography variant="subtitle1" gutterBottom>
-                Required Permissions
+                Permissões Necessárias
               </Typography>
               <Paper variant="outlined" sx={{ p: 2, mt: 1 }}>
                 <Typography variant="body2" paragraph>
-                  • <strong>instagram_basic</strong>: Access to posts and basic profile information
+                  • <strong>instagram_basic</strong>: Acesso a posts e informações básicas do perfil
                 </Typography>
                 <Typography variant="body2" paragraph>
-                  • <strong>instagram_content_publish</strong>: Ability to publish content to Instagram
+                  • <strong>instagram_content_publish</strong>: Capacidade de publicar conteúdo no Instagram
                 </Typography>
                 <Typography variant="body2" paragraph>
-                  • <strong>instagram_manage_comments</strong>: Access comments and who commented on your posts
+                  • <strong>instagram_manage_comments</strong>: Acesso a comentários e quem comentou em seus posts
                 </Typography>
                 <Typography variant="body2" paragraph>
-                  • <strong>instagram_manage_insights</strong>: Access likes and who interacted with your posts
+                  • <strong>instagram_manage_insights</strong>: Acesso a curtidas e quem interagiu com seus posts
                 </Typography>
               </Paper>
             </Box>
