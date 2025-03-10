@@ -81,6 +81,15 @@ const InstagramConnect = () => {
     setError(null);
     
     try {
+      // Verify state parameter to prevent CSRF attacks
+      const urlParams = new URLSearchParams(window.location.search);
+      const returnedState = urlParams.get('state');
+      const storedState = sessionStorage.getItem('instagram_oauth_state');
+      
+      if (!returnedState || !storedState || returnedState !== storedState) {
+        throw new Error('Invalid state parameter. Authentication failed for security reasons.');
+      }
+      
       // Store credentials temporarily in localStorage for the callback
       localStorage.setItem('instagram_app_id', appId);
       localStorage.setItem('instagram_app_secret', appSecret);
@@ -92,11 +101,12 @@ const InstagramConnect = () => {
       setProfile(userProfile);
       setConnected(true);
       
-      // Clean up the URL
+      // Clean up the URL and session storage
       window.history.replaceState({}, document.title, window.location.pathname);
-    } catch (err) {
+      sessionStorage.removeItem('instagram_oauth_state');
+    } catch (err: any) {
       console.error('Instagram OAuth callback error:', err);
-      setError('Failed to complete Instagram authentication. Please try again.');
+      setError(err.message || 'Failed to complete Instagram authentication. Please try again.');
     } finally {
       setLoading(false);
     }

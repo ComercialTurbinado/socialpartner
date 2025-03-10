@@ -67,11 +67,14 @@ export const initiateInstagramOAuth = (appId: string, redirectUri: string, permi
   // instagram_manage_insights - Access to likes and who liked posts
   
   // Make sure we have the required permissions
-  const requiredPermissions = ['instagram_basic'];
+  const requiredPermissions = ['instagram_basic', 'pages_show_list', 'pages_read_engagement'];
   const allPermissions = [...new Set([...requiredPermissions, ...permissions])];
   
   const scope = allPermissions.join(',');
-  const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code`;
+  const state = generateRandomString(32);
+  sessionStorage.setItem('instagram_oauth_state', state);
+  
+  const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code&state=${state}`;
   window.location.href = authUrl;
 };
 
@@ -141,6 +144,16 @@ export const completeInstagramOAuth = async (code: string, appId: string, appSec
       if (errorMessage) {
         throw new Error(`Instagram authentication failed: ${errorMessage}`);
       }
+    }
+    
+    // Check if we have pages but no Instagram business account
+    if (error.message && error.message.includes('No Instagram business account found')) {
+      throw new Error('No Instagram business account found. Please make sure your Facebook account is connected to an Instagram business or creator account.');
+    }
+    
+    // Check for token exchange errors
+    if (error.message && error.message.includes('access_token')) {
+      throw new Error('Failed to exchange authorization code for access token. Please try again and ensure your app credentials are correct.');
     }
     
     // If no specific error message is available, provide a detailed generic message
