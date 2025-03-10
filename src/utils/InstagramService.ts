@@ -46,10 +46,26 @@ export interface InstagramInteractions {
  * Fetches user's media from Instagram using the Graph API
  * @returns Promise with array of media items
  */
+/**
+ * Checks if the user has a valid Instagram business account
+ * @returns Boolean indicating if user has a valid Instagram business account
+ */
+export const hasValidInstagramAccount = (): boolean => {
+  const profile = getStoredToken('instagram');
+  if (!profile) return false;
+  
+  // Check if we have a valid Instagram business account ID
+  return !!profile.id;
+};
+
 export const fetchUserMedia = async (): Promise<InstagramMedia[]> => {
   const profile = getStoredToken('instagram');
   if (!profile) {
     throw new Error('Not authenticated with Instagram');
+  }
+  
+  if (!profile.id) {
+    throw new Error('No Instagram business account found. Please make sure you have a business or creator account connected to a Facebook page.');
   }
 
   try {

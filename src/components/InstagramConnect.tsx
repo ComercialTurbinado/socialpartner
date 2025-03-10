@@ -104,6 +104,14 @@ const InstagramConnect = () => {
         return;
       }
       
+      // Check if we have an empty accounts array, which means no Instagram business account
+      if (rawResponse.rawAccountsResponse && 
+          rawResponse.rawAccountsResponse.data && 
+          rawResponse.rawAccountsResponse.data.length === 0) {
+        setError('No Instagram business account found. Please make sure you have a business or creator account connected to a Facebook page.');
+        return;
+      }
+      
       // Store the raw response as the profile
       storeToken('instagram', rawResponse);
       setProfile(rawResponse);
@@ -247,9 +255,7 @@ const InstagramConnect = () => {
 
           {connected && (
             <Box>
-              <Alert severity="success" sx={{ mb: 2 }}>
-                Successfully connected to Instagram
-              </Alert>
+              <InstagramAccountStatus profile={profile} error={error} />
               <Button
                 variant="contained"
                 color="primary"
@@ -288,6 +294,15 @@ const InstagramConnect = () => {
                 </Typography>
                 <Typography variant="body2">
                   5. Return here and try connecting again
+                </Typography>
+                <Typography variant="body2" sx={{ mt: 1 }}>
+                  If you received an error about "No Instagram business account found", please follow these steps:
+                  <ol>
+                    <li>Go to your Facebook Page</li>
+                    <li>Click on Settings > Instagram</li>
+                    <li>Connect your Instagram account to your Facebook Page</li>
+                    <li>Make sure your Instagram account is switched to a Business or Creator account</li>
+                  </ol>
                 </Typography>
               </Alert>
               

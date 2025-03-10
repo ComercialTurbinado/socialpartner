@@ -62,11 +62,18 @@ const InstagramPosts = () => {
     setError(null);
 
     try {
+      // First check if user has a valid Instagram business account
+      const profile = getStoredToken('instagram');
+      if (!profile || !profile.id) {
+        throw new Error('No Instagram business account found. Please make sure you have a business or creator account connected to a Facebook page.');
+      }
+      
       const mediaWithInteractions = await getUserMediaWithInteractions();
       setPosts(mediaWithInteractions);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error fetching Instagram posts:', err);
-      setError('Failed to load Instagram posts. Please make sure you are connected to Instagram with the appropriate permissions.');
+      // Display the specific error message
+      setError(err.message || 'Failed to load Instagram posts. Please make sure you are connected to Instagram with the appropriate permissions.');
     } finally {
       setLoading(false);
     }
