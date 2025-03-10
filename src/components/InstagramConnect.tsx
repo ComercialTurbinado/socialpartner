@@ -11,7 +11,7 @@ import {
   Paper
 } from '@mui/material';
 import { Instagram as InstagramIcon } from '@mui/icons-material';
-import { completeInstagramOAuth, storeToken, getStoredToken, removeStoredToken, SocialProfile } from '../utils/OAuthService';
+import { completeInstagramOAuth, storeToken, getStoredToken, removeStoredToken, SocialProfile, initiateInstagramOAuth } from '../utils/OAuthService';
 
 interface InstagramPermission {
   name: string;
@@ -27,9 +27,9 @@ const InstagramConnect = () => {
   const [profile, setProfile] = useState<SocialProfile | null>(null);
   const [redirectUri] = useState('https://main.d12gqpnoazw6w2.amplifyapp.com/instagram');
   
-  // Use environment variables for App ID and Secret
-  const appId = import.meta.env.VITE_INSTAGRAM_APP_ID;
-  const appSecret = import.meta.env.VITE_INSTAGRAM_APP_SECRET;
+  // Hardcoded App ID and Secret
+  const appId = '1175934413920106';
+  const appSecret = 'f6ffd1ccf5451dec1b75a3795867251c';
   
   const [permissions] = useState<InstagramPermission[]>([
     {
@@ -116,14 +116,9 @@ const InstagramConnect = () => {
         .filter(p => p.enabled)
         .map(p => p.name);
       
-      // Add required Facebook permissions for Instagram Graph API
-      selectedPermissions.push('pages_show_list', 'instagram_basic', 'instagram_content_publish', 'pages_read_engagement');
-      
-      // Use the mapped permissions for the scope
-      const scope = selectedPermissions.join('%2C');
-      
-      const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code`;
-      window.location.href = authUrl;
+      // Use the initiateInstagramOAuth function from OAuthService
+      // This function handles adding required permissions and constructing the proper URL
+      initiateInstagramOAuth(appId, redirectUri, selectedPermissions);
     } catch (err) {
       console.error('Instagram OAuth error:', err);
       setError('Failed to connect to Instagram. Please try again.');
