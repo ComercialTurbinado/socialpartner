@@ -27,9 +27,9 @@ const InstagramConnect = () => {
   const [profile, setProfile] = useState<SocialProfile | null>(null);
   const [redirectUri] = useState('https://main.d12gqpnoazw6w2.amplifyapp.com/instagram');
   
-  // Hardcoded App ID and Secret
-  const appId = '1175934413920106';
-  const appSecret = 'f6ffd1ccf5451dec1b75a3795867251c';
+  // Use environment variables for App ID and Secret
+  const appId = import.meta.env.VITE_INSTAGRAM_APP_ID;
+  const appSecret = import.meta.env.VITE_INSTAGRAM_APP_SECRET;
   
   const [permissions] = useState<InstagramPermission[]>([
     {
