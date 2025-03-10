@@ -78,34 +78,39 @@ export const initiateInstagramOAuth = (appId: string, redirectUri: string, permi
   window.location.href = authUrl;
 };
 
-export const completeInstagramOAuth = async (code: string, appId: string, appSecret: string, redirectUri: string): Promise<SocialProfile> => {
+export const completeInstagramOAuth = async (code: string, appId: string, appSecret: string, redirectUri: string): Promise<any> => {
   try {
     // Exchange code for access token using Facebook Graph API
     const tokenResponse = await axios.get(
       `https://graph.facebook.com/v18.0/oauth/access_token?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&client_secret=${appSecret}&code=${code}`
     );
     
-    // @ts-ignore
-    const { access_token, expires_in } = tokenResponse.data;
+    // Store the raw token response
+    const rawTokenResponse = tokenResponse.data;
+    const access_token = rawTokenResponse.access_token;
     
     // Exchange short-lived token for long-lived token (60 days)
     const longLivedTokenResponse = await axios.get(
       `https://graph.facebook.com/v18.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${access_token}`
     );
     
-    const longLivedToken = longLivedTokenResponse.data.access_token;
-    const longExpiresIn = longLivedTokenResponse.data.expires_in;
-    const expiresAt = longExpiresIn ? Date.now() + longExpiresIn * 1000 : undefined;
+    // Store the raw long-lived token response
+    const rawLongLivedTokenResponse = longLivedTokenResponse.data;
+    const longLivedToken = rawLongLivedTokenResponse.access_token;
     
     // Get Instagram business account ID
     const accountsResponse = await axios.get(
       `https://graph.facebook.com/v18.0/me/accounts?access_token=${longLivedToken}`
     );
     
+    // Store the raw accounts response
+    const rawAccountsResponse = accountsResponse.data;
+    
     // Find pages with Instagram business accounts
-    const pages = accountsResponse.data.data || [];
+    const pages = rawAccountsResponse.data || [];
     let instagramBusinessAccountId = null;
     let username = '';
+    let rawPageResponses = [];
     
     // Check each page for an Instagram business account
     for (const page of pages) {
@@ -114,65 +119,44 @@ export const completeInstagramOAuth = async (code: string, appId: string, appSec
           `https://graph.facebook.com/v18.0/${page.id}?fields=instagram_business_account{id,username}&access_token=${longLivedToken}`
         );
         
+        // Store the raw page response
+        rawPageResponses.push(pageResponse.data);
+        
         if (pageResponse.data.instagram_business_account) {
           instagramBusinessAccountId = pageResponse.data.instagram_business_account.id;
           username = pageResponse.data.instagram_business_account.username;
           break;
         }
       } catch (err) {
+        // Store any errors in the raw responses
+        rawPageResponses.push({ error: err });
         console.warn(`Could not get Instagram business account for page ${page.id}:`, err);
       }
     }
     
-    if (!instagramBusinessAccountId) {
-      throw new Error('No Instagram business account found. Please make sure your Facebook account is connected to an Instagram business or creator account. You need to convert your Instagram account to a Business or Creator account and link it to your Facebook page.');
-    }
-    
+    // Return all raw responses without any transformation
     return {
+      rawTokenResponse,
+      rawLongLivedTokenResponse,
+      rawAccountsResponse,
+      rawPageResponses,
+      // Include basic profile info for compatibility
       id: instagramBusinessAccountId,
       name: username,
       username: username,
-      accessToken: longLivedToken,
-      expiresAt
+      accessToken: longLivedToken
     };
   } catch (error: unknown) {
+    // Return the raw error without transformation
     console.error('Instagram OAuth error:', error);
     
-    // Verificar se o erro é um objeto e tem a propriedade 'response'
+    // Return the raw error response
     if (error && typeof error === 'object' && 'response' in error) {
-      const errorResponse = error.response;
-      if (errorResponse && typeof errorResponse === 'object' && 'data' in errorResponse) {
-        // Usar uma asserção de tipo para informar ao TypeScript que data pode ter qualquer propriedade
-        const data = errorResponse.data as Record<string, any>;
-        const errorMessage = 
-          data.error?.message || 
-          data.error_message;
-        
-        if (errorMessage) {
-          throw new Error(`Instagram authentication failed: ${errorMessage}`);
-        }
-      }
+      return { error: error, rawErrorResponse: (error as any).response?.data };
     }
     
-    // Verificar se o erro é um objeto e tem a propriedade 'message'
-    if (error && typeof error === 'object' && 'message' in error) {
-      const errorMessage = error.message;
-      
-      if (typeof errorMessage === 'string') {
-        // Check if we have pages but no Instagram business account
-        if (errorMessage.includes('No Instagram business account found')) {
-          throw new Error('No Instagram business account found. Please make sure your Facebook account is connected to an Instagram business or creator account.');
-        }
-        
-        // Check for token exchange errors
-        if (errorMessage.includes('access_token')) {
-          throw new Error('Failed to exchange authorization code for access token. Please try again and ensure your app credentials are correct.');
-        }
-      }
-    }
-    
-    // If no specific error message is available, provide a detailed generic message
-    throw new Error('Failed to complete Instagram authentication. Please ensure: \n1. Your Facebook account is connected to an Instagram business or creator account\n2. You have granted all required permissions\n3. Your app credentials are correct');
+    // If there's no response data, return the error object as is
+    return { error: error };
   }
 };
 

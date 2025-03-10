@@ -94,11 +94,19 @@ const InstagramConnect = () => {
       localStorage.setItem('instagram_app_id', appId);
       localStorage.setItem('instagram_app_secret', appSecret);
       
-      const userProfile = await completeInstagramOAuth(code, appId, appSecret, redirectUri);
+      // Get the raw response from Instagram/Facebook API
+      const rawResponse = await completeInstagramOAuth(code, appId, appSecret, redirectUri);
       
-      // Store the profile and token
-      storeToken('instagram', userProfile);
-      setProfile(userProfile);
+      // Check if we have an error in the response
+      if (rawResponse.error) {
+        console.log('Raw Instagram OAuth error:', rawResponse);
+        setError(JSON.stringify(rawResponse, null, 2));
+        return;
+      }
+      
+      // Store the raw response as the profile
+      storeToken('instagram', rawResponse);
+      setProfile(rawResponse);
       setConnected(true);
       
       // Clean up the URL and session storage
@@ -106,13 +114,8 @@ const InstagramConnect = () => {
       sessionStorage.removeItem('instagram_oauth_state');
     } catch (err: any) {
       console.error('Instagram OAuth callback error:', err);
-      
-      // Check if this is the specific business account error
-      if (err.message && err.message.includes('No Instagram business account found')) {
-        setError('No Instagram business account found. You must have an Instagram business or creator account connected to a Facebook page.');
-      } else {
-        setError(err.message || 'Failed to complete Instagram authentication. Please try again.');
-      }
+      // Return the raw error without any processing
+      setError(JSON.stringify(err, null, 2));
     } finally {
       setLoading(false);
     }
@@ -315,20 +318,39 @@ const InstagramConnect = () => {
       {connected && profile && (
         <Box sx={{ mt: 3 }}>
           <Typography variant="h6" gutterBottom>
-            Connected Instagram Account
+            Connected Instagram Account - Raw Response Data
           </Typography>
           <Paper variant="outlined" sx={{ p: 2 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <Box>
-                <Typography variant="h6">{profile.username || profile.name}</Typography>
+            {/* Display basic info if available */}
+            {profile.username && (
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="h6">{profile.username}</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  User ID: {profile.id}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Connected since: {new Date().toLocaleDateString()}
+                </Typography>
               </Box>
+            )}
+            
+            {/* Display raw response data */}
+            <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
+              Raw Facebook/Instagram API Response:
+            </Typography>
+            <Box 
+              component="pre" 
+              sx={{ 
+                p: 2, 
+                bgcolor: '#f5f5f5', 
+                borderRadius: 1, 
+                overflow: 'auto',
+                maxHeight: '400px',
+                fontSize: '0.75rem'
+              }}
+            >
+              {JSON.stringify(profile, null, 2)}
             </Box>
-            <Typography variant="body2" color="text.secondary">
-              User ID: {profile.id}
-            </Typography>
-            <Typography variant="body2" color="text.secondary">
-              Connected since: {new Date().toLocaleDateString()}
-            </Typography>
           </Paper>
         </Box>
       )}
