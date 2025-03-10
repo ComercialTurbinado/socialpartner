@@ -132,9 +132,19 @@ export const completeInstagramOAuth = async (code: string, appId: string, appSec
       accessToken: longLivedToken,
       expiresAt
     };
-  } catch (error) {
+  } catch (error: any) {
     console.error('Instagram OAuth error:', error);
-    throw new Error('Failed to complete Instagram authentication. Make sure you have a business or creator Instagram account connected to your Facebook page.');
+    
+    // Check for specific error types
+    if (error.response) {
+      const errorMessage = error.response.data?.error?.message || error.response.data?.error_message;
+      if (errorMessage) {
+        throw new Error(`Instagram authentication failed: ${errorMessage}`);
+      }
+    }
+    
+    // If no specific error message is available, provide a detailed generic message
+    throw new Error('Failed to complete Instagram authentication. Please ensure: \n1. Your Facebook account is connected to an Instagram business or creator account\n2. You have granted all required permissions\n3. Your app credentials are correct');
   }
 };
 

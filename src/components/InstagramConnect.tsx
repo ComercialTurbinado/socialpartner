@@ -111,29 +111,18 @@ const InstagramConnect = () => {
       localStorage.setItem('instagram_app_id', appId);
       localStorage.setItem('instagram_app_secret', appSecret);
       
-      // Get selected permissions and map them to Instagram business permissions
+      // Get selected permissions for Instagram Graph API
       const selectedPermissions = permissions
         .filter(p => p.enabled)
-        .map(p => {
-          // Map basic permissions to their business counterparts
-          switch(p.name) {
-            case 'instagram_basic':
-              return 'instagram_business_basic';
-            case 'instagram_content_publish':
-              return 'instagram_business_content_publish';
-            case 'instagram_manage_comments':
-              return 'instagram_business_manage_comments';
-            case 'instagram_manage_insights':
-              return 'instagram_business_manage_insights';
-            default:
-              return p.name;
-          }
-        });
+        .map(p => p.name);
+      
+      // Add required Facebook permissions for Instagram Graph API
+      selectedPermissions.push('pages_show_list', 'instagram_basic', 'instagram_content_publish', 'pages_read_engagement');
       
       // Use the mapped permissions for the scope
       const scope = selectedPermissions.join('%2C');
       
-      const authUrl = `https://www.instagram.com/oauth/authorize?enable_fb_login=0&force_authentication=1&client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${scope}`;
+      const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${appId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${scope}&response_type=code`;
       window.location.href = authUrl;
     } catch (err) {
       console.error('Instagram OAuth error:', err);
