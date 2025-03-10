@@ -135,25 +135,40 @@ export const completeInstagramOAuth = async (code: string, appId: string, appSec
       accessToken: longLivedToken,
       expiresAt
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Instagram OAuth error:', error);
     
-    // Check for specific error types
-    if (error.response) {
-      const errorMessage = error.response.data?.error?.message || error.response.data?.error_message;
-      if (errorMessage) {
-        throw new Error(`Instagram authentication failed: ${errorMessage}`);
+    // Verificar se o erro é um objeto e tem a propriedade 'response'
+    if (error && typeof error === 'object' && 'response' in error) {
+      const errorResponse = error.response;
+      if (errorResponse && typeof errorResponse === 'object' && 'data' in errorResponse) {
+        // Usar uma asserção de tipo para informar ao TypeScript que data pode ter qualquer propriedade
+        const data = errorResponse.data as Record<string, any>;
+        const errorMessage = 
+          data.error?.message || 
+          data.error_message;
+        
+        if (errorMessage) {
+          throw new Error(`Instagram authentication failed: ${errorMessage}`);
+        }
       }
     }
     
-    // Check if we have pages but no Instagram business account
-    if (error.message && error.message.includes('No Instagram business account found')) {
-      throw new Error('No Instagram business account found. Please make sure your Facebook account is connected to an Instagram business or creator account.');
-    }
-    
-    // Check for token exchange errors
-    if (error.message && error.message.includes('access_token')) {
-      throw new Error('Failed to exchange authorization code for access token. Please try again and ensure your app credentials are correct.');
+    // Verificar se o erro é um objeto e tem a propriedade 'message'
+    if (error && typeof error === 'object' && 'message' in error) {
+      const errorMessage = error.message;
+      
+      if (typeof errorMessage === 'string') {
+        // Check if we have pages but no Instagram business account
+        if (errorMessage.includes('No Instagram business account found')) {
+          throw new Error('No Instagram business account found. Please make sure your Facebook account is connected to an Instagram business or creator account.');
+        }
+        
+        // Check for token exchange errors
+        if (errorMessage.includes('access_token')) {
+          throw new Error('Failed to exchange authorization code for access token. Please try again and ensure your app credentials are correct.');
+        }
+      }
     }
     
     // If no specific error message is available, provide a detailed generic message
