@@ -362,7 +362,8 @@ const InstagramConnect = () => {
                 borderRadius: 1, 
                 overflow: 'auto',
                 maxHeight: '400px',
-                fontSize: '0.75rem'
+                fontSize: '0.75rem',
+                display:"none"
               }}
             >
               {JSON.stringify(profile, null, 2)}

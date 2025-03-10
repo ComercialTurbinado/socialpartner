@@ -16,12 +16,8 @@ import {
 } from '@mui/material';
 import {
   ExpandMore as ExpandMoreIcon,
-  CheckCircle as CheckCircleIcon,
-  Error as ErrorIcon,
-  Info as InfoIcon,
   ArrowRight as ArrowRightIcon
 } from '@mui/icons-material';
-import { SocialProfile } from '../utils/OAuthService';
 
 interface InstagramAccountStatusProps {
   profile: any; // Raw Instagram profile data
