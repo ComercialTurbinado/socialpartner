@@ -19,6 +19,7 @@ import {
 } from '@mui/material';
 import { Facebook as FacebookIcon } from '@mui/icons-material';
 import { initiateFacebookOAuth, completeFacebookOAuth, storeToken, getStoredToken, removeStoredToken, SocialProfile } from '../utils/OAuthService';
+import axios from 'axios';
 
 interface FacebookPermission {
   name: string;
@@ -36,6 +37,8 @@ const FacebookConnect = () => {
   const [redirectUri, setRedirectUri] = useState(window.location.origin + '/facebook');
   const [showConfig, setShowConfig] = useState(false);
   const [profile, setProfile] = useState<SocialProfile | null>(null);
+  const [usePersonalToken, setUsePersonalToken] = useState(false);
+  const [personalAccessToken, setPersonalAccessToken] = useState('');
   const [permissions, setPermissions] = useState<FacebookPermission[]>([
     {
       name: 'pages_read_engagement',
@@ -104,7 +107,7 @@ const FacebookConnect = () => {
       window.history.replaceState({}, document.title, window.location.pathname);
     } catch (err) {
       console.error('Facebook OAuth callback error:', err);
-      setError('Failed to complete Facebook authentication. Please try again.');
+      setError('O Login do Facebook está indisponível para este aplicativo no momento. Por favor, tente novamente mais tarde.');
     } finally {
       setLoading(false);
     }
@@ -164,6 +167,49 @@ const FacebookConnect = () => {
     if (!updatedPermissions[index].required) {
       updatedPermissions[index].enabled = !updatedPermissions[index].enabled;
       setPermissions(updatedPermissions);
+    }
+  };
+
+  const handleConnectWithPersonalToken = async () => {
+    if (!personalAccessToken) {
+      setError('Personal Access Token is required');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Validate the token by making a simple request to the Graph API
+      const response = await axios.get(
+        `https://graph.facebook.com/v18.0/me?fields=id,name,email,picture&access_token=${personalAccessToken}`
+      );
+      
+      const userData = response.data;
+      
+      // Create a profile object similar to what we'd get from OAuth
+      const userProfile: SocialProfile = {
+        id: userData.id,
+        name: userData.name,
+        email: userData.email,
+        picture: userData.picture?.data?.url,
+        accessToken: personalAccessToken,
+        // No expiration for personal tokens unless specified
+        expiresAt: undefined
+      };
+      
+      // Store the profile and token
+      storeToken('facebook', userProfile);
+      setProfile(userProfile);
+      setConnected(true);
+      
+      // Hide the configuration panel
+      setShowConfig(false);
+    } catch (err: any) {
+      console.error('Personal token validation error:', err);
+      setError(err.response?.data?.error?.message || 'Failed to validate personal access token. Please check the token and try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -230,64 +276,104 @@ const FacebookConnect = () => {
               <Typography variant="subtitle1" gutterBottom>
                 Facebook App Configuration
               </Typography>
-              <TextField
-                label="App ID"
-                variant="outlined"
-                fullWidth
-                margin="normal"
-                value={appId}
-                onChange={(e) => setAppId(e.target.value)}
-              />
-              <TextField
-                label="App Secret"
-                variant="outlined"
-                fullWidth
-                margin="normal"
-                type="password"
-                value={appSecret}
-                onChange={(e) => setAppSecret(e.target.value)}
-              />
-              <TextField
-                label="Redirect URI"
-                variant="outlined"
-                fullWidth
-                margin="normal"
-                value={redirectUri}
-                onChange={(e) => setRedirectUri(e.target.value)}
-                helperText="This must match the redirect URI configured in your Facebook app"
-              />
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 2 }}>
-                You can find your App ID and App Secret in the Facebook Developer Portal. Make sure to add the Redirect URI to your Facebook app's Valid OAuth Redirect URIs.
-              </Typography>
-
-              <Divider sx={{ my: 2 }} />
               
-              <Typography variant="subtitle1" gutterBottom>
-                Permissions
-              </Typography>
-              <Paper variant="outlined" sx={{ mt: 1 }}>
-                <List>
-                  {permissions.map((permission, index) => (
-                    <ListItem key={permission.name} divider={index < permissions.length - 1}>
-                      <ListItemText
-                        primary={permission.name}
-                        secondary={permission.description}
-                      />
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            checked={permission.enabled}
-                            onChange={() => handlePermissionChange(index)}
-                            disabled={permission.required}
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={usePersonalToken}
+                    onChange={(e) => setUsePersonalToken(e.target.checked)}
+                  />
+                }
+                label="Use Personal Access Token"
+                sx={{ mb: 2 }}
+              />
+              
+              {usePersonalToken ? (
+                <>
+                  <TextField
+                    label="Personal Access Token"
+                    variant="outlined"
+                    fullWidth
+                    margin="normal"
+                    value={personalAccessToken}
+                    onChange={(e) => setPersonalAccessToken(e.target.value)}
+                  />
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 2 }}>
+                    You can generate a personal access token in the Facebook Developer Portal. 
+                    Go to your app, then Tools &gt; Graph API Explorer, select your app, add the necessary permissions, and click "Generate Access Token".
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleConnectWithPersonalToken}
+                    disabled={loading || !personalAccessToken}
+                    sx={{ mt: 1 }}
+                  >
+                    {loading ? <CircularProgress size={24} /> : 'Connect with Token'}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <TextField
+                    label="App ID"
+                    variant="outlined"
+                    fullWidth
+                    margin="normal"
+                    value={appId}
+                    onChange={(e) => setAppId(e.target.value)}
+                  />
+                  <TextField
+                    label="App Secret"
+                    variant="outlined"
+                    fullWidth
+                    margin="normal"
+                    type="password"
+                    value={appSecret}
+                    onChange={(e) => setAppSecret(e.target.value)}
+                  />
+                  <TextField
+                    label="Redirect URI"
+                    variant="outlined"
+                    fullWidth
+                    margin="normal"
+                    value={redirectUri}
+                    onChange={(e) => setRedirectUri(e.target.value)}
+                    helperText="This must match the redirect URI configured in your Facebook app"
+                  />
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 2 }}>
+                    You can find your App ID and App Secret in the Facebook Developer Portal. Make sure to add the Redirect URI to your Facebook app's Valid OAuth Redirect URIs.
+                  </Typography>
+
+                  <Divider sx={{ my: 2 }} />
+                  
+                  <Typography variant="subtitle1" gutterBottom>
+                    Permissions
+                  </Typography>
+                  <Paper variant="outlined" sx={{ mt: 1 }}>
+                    <List>
+                      {permissions.map((permission, index) => (
+                        <ListItem key={permission.name} divider={index < permissions.length - 1}>
+                          <ListItemText
+                            primary={permission.name}
+                            secondary={permission.description}
                           />
-                        }
-                        label={permission.required ? "Required" : "Optional"}
-                        labelPlacement="start"
-                      />
-                    </ListItem>
-                  ))}
-                </List>
-              </Paper>
+                          <FormControlLabel
+                            control={
+                              <Switch
+                                checked={permission.enabled}
+                                onChange={() => handlePermissionChange(index)}
+                                disabled={permission.required}
+                              />
+                            }
+                            label={permission.required ? "Required" : "Optional"}
+                            labelPlacement="start"
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  </Paper>
+                </>
+              )}
             </Box>
           )}
         </CardContent>
