@@ -35,9 +35,9 @@ const FacebookConnect = () => {
   const [appId, setAppId] = useState('');
   const [appSecret, setAppSecret] = useState('');
   const [redirectUri, setRedirectUri] = useState(window.location.origin + '/facebook');
-  const [showConfig, setShowConfig] = useState(false);
+  const [showConfig, setShowConfig] = useState(true);
   const [profile, setProfile] = useState<SocialProfile | null>(null);
-  const [usePersonalToken, setUsePersonalToken] = useState(false);
+  const [usePersonalToken, setUsePersonalToken] = useState(true);
   const [personalAccessToken, setPersonalAccessToken] = useState('');
   const [permissions, setPermissions] = useState<FacebookPermission[]>([
     {
@@ -207,7 +207,7 @@ const FacebookConnect = () => {
       setShowConfig(false);
     } catch (err: any) {
       console.error('Personal token validation error:', err);
-      setError(err.response?.data?.error?.message || 'Failed to validate personal access token. Please check the token and try again.');
+      setError(err.response?.data?.error?.message || 'Falha ao validar o token de acesso pessoal. Por favor, verifique o token e tente novamente.');
     } finally {
       setLoading(false);
     }
@@ -299,8 +299,8 @@ const FacebookConnect = () => {
                     onChange={(e) => setPersonalAccessToken(e.target.value)}
                   />
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 2 }}>
-                    You can generate a personal access token in the Facebook Developer Portal. 
-                    Go to your app, then Tools &gt; Graph API Explorer, select your app, add the necessary permissions, and click "Generate Access Token".
+                    Você pode gerar um token de acesso pessoal no Portal de Desenvolvedor do Facebook. 
+                    Vá para seu aplicativo, depois Ferramentas &gt; Graph API Explorer, selecione seu aplicativo, adicione as permissões necessárias e clique em "Gerar Token de Acesso".
                   </Typography>
                   <Button
                     variant="contained"
@@ -309,7 +309,7 @@ const FacebookConnect = () => {
                     disabled={loading || !personalAccessToken}
                     sx={{ mt: 1 }}
                   >
-                    {loading ? <CircularProgress size={24} /> : 'Connect with Token'}
+                    {loading ? <CircularProgress size={24} /> : 'Conectar com Token'}
                   </Button>
                 </>
               ) : (
