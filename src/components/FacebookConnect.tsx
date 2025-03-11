@@ -32,10 +32,11 @@ const FacebookConnect = () => {
   const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [appId, setAppId] = useState('');
-  const [appSecret, setAppSecret] = useState('');
+  // Use environment variables instead of empty state
+  const [appId, setAppId] = useState(import.meta.env.VITE_INSTAGRAM_APP_ID || '');
+  const [appSecret, setAppSecret] = useState(import.meta.env.VITE_INSTAGRAM_APP_SECRET || '');
   const [redirectUri, setRedirectUri] = useState(window.location.origin + '/facebook');
-  const [showConfig, setShowConfig] = useState(true);
+  const [showConfig, setShowConfig] = useState(false);
   const [profile, setProfile] = useState<SocialProfile | null>(null);
   const [usePersonalToken, setUsePersonalToken] = useState(true);
   const [personalAccessToken, setPersonalAccessToken] = useState('');
@@ -297,6 +298,7 @@ const FacebookConnect = () => {
                     margin="normal"
                     value={personalAccessToken}
                     onChange={(e) => setPersonalAccessToken(e.target.value)}
+                    required
                   />
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 1, mb: 2 }}>
                     Você pode gerar um token de acesso pessoal no Portal de Desenvolvedor do Facebook. 
@@ -321,6 +323,9 @@ const FacebookConnect = () => {
                     margin="normal"
                     value={appId}
                     onChange={(e) => setAppId(e.target.value)}
+                    required
+                    error={!appId && error?.includes('App ID')}
+                    helperText={!appId && error?.includes('App ID') ? 'App ID is required' : ''}
                   />
                   <TextField
                     label="App Secret"
@@ -330,6 +335,9 @@ const FacebookConnect = () => {
                     type="password"
                     value={appSecret}
                     onChange={(e) => setAppSecret(e.target.value)}
+                    required
+                    error={!appSecret && error?.includes('App Secret')}
+                    helperText={!appSecret && error?.includes('App Secret') ? 'App Secret is required' : ''}
                   />
                   <TextField
                     label="Redirect URI"
