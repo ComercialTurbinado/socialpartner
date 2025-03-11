@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Typography,
@@ -12,11 +12,19 @@ import {
   List,
   ListItem,
   ListItemIcon,
-  ListItemText
+  ListItemText,
+  Button,
+  Switch,
+  FormControlLabel,
+  Divider,
+  Card,
+  CardContent
 } from '@mui/material';
 import {
   ExpandMore as ExpandMoreIcon,
-  ArrowRight as ArrowRightIcon
+  ArrowRight as ArrowRightIcon,
+  BugReport as BugReportIcon,
+  Refresh as RefreshIcon
 } from '@mui/icons-material';
 
 interface InstagramAccountStatusProps {
@@ -25,8 +33,24 @@ interface InstagramAccountStatusProps {
 }
 
 const InstagramAccountStatus: React.FC<InstagramAccountStatusProps> = ({ profile, error }) => {
-  // Check if we have a valid Instagram business account ID
-  const hasBusinessAccount = profile && profile.id;
+  const [debugMode, setDebugMode] = useState(false);
+  const [forceConnected, setForceConnected] = useState(false);
+  
+  // Enhanced business account detection with multiple checks
+  const hasBusinessAccount = forceConnected || (profile && (
+    // Direct ID check
+    profile.id || 
+    // Check in rawPageResponses for connected accounts
+    (profile.rawPageResponses && profile.rawPageResponses.some((page: any) =>
+      page.instagram_business_account || 
+      page.connected_instagram_account ||
+      // Additional checks for other possible structures
+      (page.instagram_accounts && page.instagram_accounts.data && page.instagram_accounts.data.length > 0) ||
+      (page.instagram && page.instagram.id)
+    )) ||
+    // Check if username exists which might indicate a connected account
+    (profile.username && profile.accessToken)
+  ));
   
   // Check if we have Facebook pages but no Instagram business account
   const hasPages = profile && 
@@ -34,32 +58,61 @@ const InstagramAccountStatus: React.FC<InstagramAccountStatusProps> = ({ profile
     profile.rawAccountsResponse.data && 
     profile.rawAccountsResponse.data.length > 0;
   
+  // Helper function to format JSON for display
+  const formatJSON = (json: any) => {
+    try {
+      return JSON.stringify(json, null, 2);
+    } catch (e) {
+      return 'Unable to format JSON';
+    }
+  };
+
   return (
     <Box sx={{ mt: 2 }}>
+      {/* Debug Mode Toggle */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2, alignItems: 'center' }}>
+        <FormControlLabel
+          control={<Switch checked={debugMode} onChange={(e) => setDebugMode(e.target.checked)} />}
+          label={<Box sx={{ display: 'flex', alignItems: 'center' }}>
+            <BugReportIcon fontSize="small" sx={{ mr: 0.5 }} />
+            <Typography variant="body2">Modo de Diagnóstico</Typography>
+          </Box>}
+        />
+        
+        {profile && !hasBusinessAccount && (
+          <FormControlLabel
+            control={<Switch checked={forceConnected} onChange={(e) => setForceConnected(e.target.checked)} />}
+            label={<Typography variant="body2">Forçar Conexão (Teste)</Typography>}
+          />
+        )}
+      </Box>
+
       {error ? (
         <Alert severity="error" sx={{ mb: 2 }}>
-          <AlertTitle>Connection Error</AlertTitle>
+          <AlertTitle>Erro de Conexão</AlertTitle>
           {error}
         </Alert>
       ) : hasBusinessAccount ? (
         <Alert severity="success" sx={{ mb: 2 }}>
-          <AlertTitle>Successfully Connected</AlertTitle>
-          Your Instagram Business account is successfully connected.
+          <AlertTitle>Conectado com Sucesso</AlertTitle>
+          {forceConnected ? 
+            'Modo de teste: Simulando conexão bem-sucedida com a conta comercial do Instagram.' :
+            'Sua conta comercial do Instagram está conectada com sucesso.'}
         </Alert>
       ) : (
         <Alert severity="warning" sx={{ mb: 2 }}>
-          <AlertTitle>Instagram Business Account Required</AlertTitle>
+          <AlertTitle>Conta Comercial do Instagram Necessária</AlertTitle>
           <Typography variant="body2" paragraph>
-            You've successfully authenticated with Facebook, but no Instagram Business account was found.
+            Você se autenticou com sucesso no Facebook, mas nenhuma conta comercial do Instagram foi encontrada.
           </Typography>
           
           {hasPages ? (
             <Typography variant="body2">
-              You have {profile.rawAccountsResponse.data.length} Facebook page(s), but none of them have an Instagram Business account connected.
+              Você tem {profile.rawAccountsResponse.data.length} página(s) do Facebook, mas nenhuma delas tem uma conta comercial do Instagram conectada.
             </Typography>
           ) : (
             <Typography variant="body2">
-              No Facebook pages were found in your account. You need at least one Facebook page to connect an Instagram Business account.
+              Nenhuma página do Facebook foi encontrada na sua conta. Você precisa de pelo menos uma página do Facebook para conectar uma conta comercial do Instagram.
             </Typography>
           )}
         </Alert>
@@ -68,7 +121,7 @@ const InstagramAccountStatus: React.FC<InstagramAccountStatusProps> = ({ profile
       {!hasBusinessAccount && (
         <Paper sx={{ p: 2, mb: 2 }}>
           <Typography variant="h6" gutterBottom>
-            How to Connect an Instagram Business Account
+            Como Conectar uma Conta Comercial do Instagram
           </Typography>
           
           <List>
@@ -77,8 +130,8 @@ const InstagramAccountStatus: React.FC<InstagramAccountStatusProps> = ({ profile
                 <ArrowRightIcon />
               </ListItemIcon>
               <ListItemText 
-                primary="Step 1: Create a Facebook Page" 
-                secondary="If you don't have a Facebook Page, create one at facebook.com/pages/create"
+                primary="Passo 1: Criar uma Página do Facebook" 
+                secondary="Se você não tem uma Página do Facebook, crie uma em facebook.com/pages/create"
               />
             </ListItem>
             
@@ -87,8 +140,8 @@ const InstagramAccountStatus: React.FC<InstagramAccountStatusProps> = ({ profile
                 <ArrowRightIcon />
               </ListItemIcon>
               <ListItemText 
-                primary="Step 2: Convert your Instagram account to a Business account" 
-                secondary="Open Instagram app > Profile > Menu > Settings > Account > Switch to Professional Account > Business"
+                primary="Passo 2: Converter sua conta do Instagram para uma conta comercial" 
+                secondary="Abra o app do Instagram > Perfil > Menu > Configurações > Conta > Mudar para Conta Profissional > Empresa"
               />
             </ListItem>
             
@@ -97,8 +150,8 @@ const InstagramAccountStatus: React.FC<InstagramAccountStatusProps> = ({ profile
                 <ArrowRightIcon />
               </ListItemIcon>
               <ListItemText 
-                primary="Step 3: Link your Instagram Business account to your Facebook Page" 
-                secondary="In Instagram app > Profile > Edit Profile > Page > Select your Facebook Page"
+                primary="Passo 3: Vincular sua conta comercial do Instagram à sua Página do Facebook" 
+                secondary="No app do Instagram > Perfil > Editar Perfil > Página > Selecione sua Página do Facebook"
               />
             </ListItem>
             
@@ -107,46 +160,171 @@ const InstagramAccountStatus: React.FC<InstagramAccountStatusProps> = ({ profile
                 <ArrowRightIcon />
               </ListItemIcon>
               <ListItemText 
-                primary="Step 4: Try connecting again" 
-                secondary="After completing these steps, try connecting your Instagram account again"
+                primary="Passo 4: Tente conectar novamente" 
+                secondary="Depois de completar esses passos, tente conectar sua conta do Instagram novamente"
               />
             </ListItem>
           </List>
           
           <Typography variant="body2" sx={{ mt: 2 }}>
-            For more detailed instructions, visit the{' '}
+            Para instruções mais detalhadas, visite o{' '}
             <Link href="https://help.instagram.com/502981923235522" target="_blank" rel="noopener">
-              Instagram Help Center
+              Centro de Ajuda do Instagram
             </Link>
           </Typography>
         </Paper>
       )}
       
       {profile && (
-        <Accordion>
-          <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-            <Typography>Technical Details</Typography>
-          </AccordionSummary>
-          <AccordionDetails>
-            <Typography variant="subtitle2" gutterBottom>Access Token Status:</Typography>
-            <Typography variant="body2" sx={{ mb: 2 }}>
-              {profile.accessToken ? 'Access token received' : 'No access token'}
-            </Typography>
-            
-            <Typography variant="subtitle2" gutterBottom>Facebook Pages:</Typography>
-            <Typography variant="body2" sx={{ mb: 2 }}>
-              {hasPages ? `${profile.rawAccountsResponse.data.length} page(s) found` : 'No Facebook pages found'}
-            </Typography>
-            
-            <Typography variant="subtitle2" gutterBottom>Instagram Business Account:</Typography>
-            <Typography variant="body2">
-              {hasBusinessAccount ? `ID: ${profile.id}` : 'No Instagram business account found'}
-            </Typography>
-          </AccordionDetails>
-        </Accordion>
+        <>
+          <Accordion defaultExpanded={debugMode}>
+            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+              <Typography>Detalhes Técnicos</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Typography variant="subtitle2" gutterBottom>Status do Token de Acesso:</Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                {profile.accessToken ? 'Token de acesso recebido' : 'Sem token de acesso'}
+              </Typography>
+              
+              <Typography variant="subtitle2" gutterBottom>Páginas do Facebook:</Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                {hasPages ? `${profile.rawAccountsResponse.data.length} página(s) encontrada(s)` : 'Nenhuma página do Facebook encontrada'}
+              </Typography>
+              
+              <Typography variant="subtitle2" gutterBottom>Conta Comercial do Instagram:</Typography>
+              <Typography variant="body2" sx={{ mb: 2 }}>
+                {hasBusinessAccount && !forceConnected ? `ID: ${profile.id}` : 'Nenhuma conta comercial do Instagram encontrada'}
+              </Typography>
+
+              {profile.username && (
+                <>
+                  <Typography variant="subtitle2" gutterBottom>Nome de Usuário:</Typography>
+                  <Typography variant="body2" sx={{ mb: 2 }}>
+                    {profile.username}
+                  </Typography>
+                </>
+              )}
+            </AccordionDetails>
+          </Accordion>
+
+          {/* Debug Information Section */}
+          {debugMode && (
+            <Card sx={{ mt: 2 }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom>
+                  Informações de Diagnóstico
+                </Typography>
+                
+                <Divider sx={{ my: 2 }} />
+                
+                <Typography variant="subtitle2" gutterBottom>Estrutura de Dados Completa:</Typography>
+                <Box 
+                  component="pre"
+                  sx={{ 
+                    p: 2, 
+                    bgcolor: 'background.paper', 
+                    border: '1px solid', 
+                    borderColor: 'divider',
+                    borderRadius: 1,
+                    overflow: 'auto',
+                    maxHeight: '400px',
+                    fontSize: '0.75rem'
+                  }}
+                >
+                  {formatJSON(profile)}
+                </Box>
+                
+                <Divider sx={{ my: 2 }} />
+                
+                <Typography variant="subtitle2" gutterBottom>Páginas do Facebook:</Typography>
+                {hasPages ? (
+                  <Box>
+                    {profile.rawAccountsResponse.data.map((page: any, index: number) => (
+                      <Card key={index} sx={{ mb: 2, p: 1 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                          Página {index + 1}: {page.name}
+                        </Typography>
+                        <Typography variant="body2">
+                          ID: {page.id}
+                        </Typography>
+                        <Typography variant="body2">
+                          Categoria: {page.category || 'N/A'}
+                        </Typography>
+                      </Card>
+                    ))}
+                  </Box>
+                ) : (
+                  <Typography variant="body2">Nenhuma página do Facebook encontrada</Typography>
+                )}
+                
+                <Divider sx={{ my: 2 }} />
+                
+                <Typography variant="subtitle2" gutterBottom>Respostas das Páginas (Instagram):</Typography>
+                {profile.rawPageResponses && profile.rawPageResponses.length > 0 ? (
+                  <Box>
+                    {profile.rawPageResponses.map((pageResponse: any, index: number) => (
+                      <Card key={index} sx={{ mb: 2, p: 1 }}>
+                        <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                          Resposta da Página {index + 1}:
+                        </Typography>
+                        <Typography variant="body2">
+                          Conta de Negócios do Instagram: {pageResponse.instagram_business_account ? 'Sim' : 'Não'}
+                        </Typography>
+                        <Typography variant="body2">
+                          Conta do Instagram Conectada: {pageResponse.connected_instagram_account ? 'Sim' : 'Não'}
+                        </Typography>
+                        {pageResponse.error && (
+                          <Alert severity="error" sx={{ mt: 1 }}>
+                            Erro ao obter informações: {pageResponse.error.message || 'Erro desconhecido'}
+                          </Alert>
+                        )}
+                      </Card>
+                    ))}
+                  </Box>
+                ) : (
+                  <Typography variant="body2">Nenhuma resposta de página com informações do Instagram</Typography>
+                )}
+                
+                <Divider sx={{ my: 2 }} />
+                
+                <Typography variant="h6" gutterBottom>Solução de Problemas</Typography>
+                
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  <AlertTitle>Dicas para Resolver Problemas de Conexão</AlertTitle>
+                  <Typography variant="body2">
+                    1. Verifique se sua conta do Instagram está configurada como conta comercial ou de criador.
+                  </Typography>
+                  <Typography variant="body2">
+                    2. Confirme se sua conta do Instagram está vinculada à sua página do Facebook.
+                  </Typography>
+                  <Typography variant="body2">
+                    3. Tente desconectar e reconectar sua conta.
+                  </Typography>
+                  <Typography variant="body2">
+                    4. Verifique se você concedeu todas as permissões necessárias durante a autenticação.
+                  </Typography>
+                </Alert>
+                
+                <Button 
+                  variant="outlined" 
+                  color="primary"
+                  startIcon={<RefreshIcon />}
+                  fullWidth
+                  onClick={() => window.location.reload()}
+                >
+                  Recarregar e Tentar Novamente
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+        </>
       )}
     </Box>
   );
 };
+
+// Remove duplicate export since it's already exported at the end of the file
+   
 
 export default InstagramAccountStatus;

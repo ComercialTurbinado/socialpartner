@@ -101,6 +101,18 @@ const InstagramConnect = () => {
       // Check if we have an error in the response
       if (rawResponse.error) {
         console.log('Raw Instagram OAuth error:', rawResponse);
+        
+        // Check for the specific "authorization code has been used" error
+        if (rawResponse.rawErrorResponse && 
+            rawResponse.rawErrorResponse.error && 
+            rawResponse.rawErrorResponse.error.message === "This authorization code has been used.") {
+          setError('This authorization code has already been used. Please try connecting again with a new authorization code.');
+          // Clean up the URL to remove the used code
+          window.history.replaceState({}, document.title, window.location.pathname);
+          sessionStorage.removeItem('instagram_oauth_state');
+          return;
+        }
+        
         setError(JSON.stringify(rawResponse, null, 2));
         return;
       }
@@ -225,6 +237,31 @@ const InstagramConnect = () => {
               </ol>
             </Paper>
           )}
+          
+          {error.includes('This authorization code has already been used') && (
+            <Paper elevation={2} sx={{ p: 2, mb: 2, bgcolor: '#f5f5f5' }}>
+              <Typography variant="h6" gutterBottom>
+                How to Fix This Issue:
+              </Typography>
+              <Typography variant="body2" paragraph>
+                This error occurs because the authorization code from Instagram can only be used once, and it appears this code has already been used.
+              </Typography>
+              <Typography variant="subtitle2" gutterBottom>
+                Follow these steps to reconnect:
+              </Typography>
+              <ol>
+                <li>
+                  <Typography variant="body2">Click the "Connect with Instagram" button below to start a new authorization process</Typography>
+                </li>
+                <li>
+                  <Typography variant="body2">You'll be redirected to Instagram/Facebook to authorize the application again</Typography>
+                </li>
+                <li>
+                  <Typography variant="body2">After authorization, you'll be redirected back with a new, valid authorization code</Typography>
+                </li>
+              </ol>
+            </Paper>
+          )}
         </Box>
       )}
 
@@ -332,7 +369,7 @@ const InstagramConnect = () => {
       </Card>
 
       {connected && profile && (
-        <Box sx={{ mt: 3 }}>
+        <Box sx={{ mt: 3, display:'' }}>
           <Typography variant="h6" gutterBottom>
             Connected Instagram Account - Raw Response Data
           </Typography>
@@ -362,8 +399,7 @@ const InstagramConnect = () => {
                 borderRadius: 1, 
                 overflow: 'auto',
                 maxHeight: '400px',
-                fontSize: '0.75rem',
-                display:"none"
+                fontSize: '0.75rem'
               }}
             >
               {JSON.stringify(profile, null, 2)}

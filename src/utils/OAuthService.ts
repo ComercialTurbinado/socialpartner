@@ -18,6 +18,7 @@ export interface SocialProfile {
   accessToken: string;
   refreshToken?: string;
   expiresAt?: number;
+  rawPageResponses?: any[];
 }
 
 // Facebook OAuth
@@ -115,16 +116,25 @@ export const completeInstagramOAuth = async (code: string, appId: string, appSec
     // Check each page for an Instagram business account
     for (const page of pages) {
       try {
+        // Request more fields to ensure we get all Instagram account data
         const pageResponse = await axios.get(
-          `https://graph.facebook.com/v18.0/${page.id}?fields=instagram_business_account{id,username}&access_token=${longLivedToken}`
+          `https://graph.facebook.com/v18.0/${page.id}?fields=instagram_business_account{id,username,profile_picture_url,name},connected_instagram_account{id,username,profile_picture_url,name}&access_token=${longLivedToken}`
         );
         
         // Store the raw page response
         rawPageResponses.push(pageResponse.data);
         
+        // Check for instagram_business_account first (preferred method)
         if (pageResponse.data.instagram_business_account) {
           instagramBusinessAccountId = pageResponse.data.instagram_business_account.id;
           username = pageResponse.data.instagram_business_account.username;
+          break;
+        }
+        
+        // Fallback to connected_instagram_account if business account not found
+        if (pageResponse.data.connected_instagram_account) {
+          instagramBusinessAccountId = pageResponse.data.connected_instagram_account.id;
+          username = pageResponse.data.connected_instagram_account.username;
           break;
         }
       } catch (err) {

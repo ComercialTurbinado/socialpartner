@@ -55,7 +55,11 @@ export const hasValidInstagramAccount = (): boolean => {
   if (!profile) return false;
   
   // Check if we have a valid Instagram business account ID
-  return !!profile.id;
+  // Look for either direct ID or check in rawPageResponses for connected accounts
+  return !!(profile.id || 
+    (profile.rawPageResponses && profile.rawPageResponses.some(page => 
+      page.instagram_business_account || page.connected_instagram_account
+    )));
 };
 
 export const fetchUserMedia = async (): Promise<InstagramMedia[]> => {
@@ -64,14 +68,30 @@ export const fetchUserMedia = async (): Promise<InstagramMedia[]> => {
     throw new Error('Not authenticated with Instagram');
   }
   
-  if (!profile.id) {
+  // Get Instagram business account ID - either directly from profile or from page responses
+  let instagramId = profile.id;
+  
+  // If no direct ID, try to find it in the rawPageResponses
+  if (!instagramId && profile.rawPageResponses) {
+    for (const page of profile.rawPageResponses) {
+      if (page.instagram_business_account) {
+        instagramId = page.instagram_business_account.id;
+        break;
+      } else if (page.connected_instagram_account) {
+        instagramId = page.connected_instagram_account.id;
+        break;
+      }
+    }
+  }
+  
+  if (!instagramId) {
     throw new Error('No Instagram business account found. Please make sure you have a business or creator account connected to a Facebook page.');
   }
 
   try {
     // Using Instagram Graph API to get user media
     const response = await axios.get(
-      `https://graph.facebook.com/v18.0/${profile.id}/media?fields=id,caption,media_type,media_url,permalink,thumbnail_url,timestamp,username,children{id,media_type,media_url,thumbnail_url}&access_token=${profile.accessToken}`
+      `https://graph.facebook.com/v18.0/${instagramId}/media?fields=id,caption,media_type,media_url,permalink,thumbnail_url,timestamp,username,children{id,media_type,media_url,thumbnail_url}&access_token=${profile.accessToken}`
     );
     
     return response.data.data;
