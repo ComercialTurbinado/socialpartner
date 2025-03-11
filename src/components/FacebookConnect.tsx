@@ -32,9 +32,9 @@ const FacebookConnect = () => {
   const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Use environment variables instead of empty state
-  const [appId, setAppId] = useState(import.meta.env.VITE_INSTAGRAM_APP_ID || '');
-  const [appSecret, setAppSecret] = useState(import.meta.env.VITE_INSTAGRAM_APP_SECRET || '');
+  // Use empty state for Facebook app credentials as they should be entered by the user
+  const [appId, setAppId] = useState('');
+  const [appSecret, setAppSecret] = useState('');
   const [redirectUri, setRedirectUri] = useState(window.location.origin + '/facebook');
   const [showConfig, setShowConfig] = useState(false);
   const [profile, setProfile] = useState<SocialProfile | null>(null);

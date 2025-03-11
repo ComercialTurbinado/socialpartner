@@ -19,6 +19,8 @@ export interface SocialProfile {
   refreshToken?: string;
   expiresAt?: number;
   rawPageResponses?: any[];
+  appId?: string;
+  appSecret?: string;
 }
 
 // Facebook OAuth

@@ -8,10 +8,17 @@ import {
   Alert,
   CircularProgress,
   Divider,
-  Paper
+  Paper,
+  TextField,
+  FormControl,
+  InputLabel,
+  OutlinedInput,
+  InputAdornment,
+  IconButton
 } from '@mui/material';
-import { Instagram as InstagramIcon } from '@mui/icons-material';
+import { Instagram as InstagramIcon, Visibility, VisibilityOff } from '@mui/icons-material';
 import { completeInstagramOAuth, storeToken, getStoredToken, removeStoredToken, SocialProfile, initiateInstagramOAuth } from '../utils/OAuthService';
+import { storeSocialCredentials, getSocialCredentials, removeSocialCredentials } from '../utils/DatabaseService';
 import InstagramAccountStatus from './InstagramAccountStatus';
 
 interface InstagramPermission {
@@ -28,9 +35,10 @@ const InstagramConnect = () => {
   const [profile, setProfile] = useState<SocialProfile | null>(null);
   const [redirectUri] = useState(window.location.origin + '/instagram');
   
-  // Use environment variables instead of hardcoded values
-  const appId = import.meta.env.VITE_INSTAGRAM_APP_ID || '';
-  const appSecret = import.meta.env.VITE_INSTAGRAM_APP_SECRET || '';
+  // Use state for App ID and App Secret instead of environment variables
+  const [appId, setAppId] = useState('');
+  const [appSecret, setAppSecret] = useState('');
+  const [showAppSecret, setShowAppSecret] = useState(false);
   
   const [permissions] = useState<InstagramPermission[]>([
     {
@@ -62,11 +70,35 @@ const InstagramConnect = () => {
 
   // Check for existing token on component mount
   useEffect(() => {
-    const storedProfile = getStoredToken('instagram');
-    if (storedProfile) {
-      setConnected(true);
-      setProfile(storedProfile);
-    }
+    const loadProfile = async () => {
+      // Try to get credentials from database first
+      const dbProfile = await getSocialCredentials('instagram');
+      
+      if (dbProfile) {
+        setConnected(true);
+        setProfile(dbProfile);
+        // Set the credentials in state so they're available if needed
+        if (dbProfile.appId) setAppId(dbProfile.appId);
+        if (dbProfile.appSecret) setAppSecret(dbProfile.appSecret);
+        return;
+      }
+      
+      // Fall back to localStorage if not in database
+      const storedProfile = getStoredToken('instagram');
+      if (storedProfile) {
+        setConnected(true);
+        setProfile(storedProfile);
+        
+        // Try to get stored credentials from localStorage
+        const storedAppId = localStorage.getItem('instagram_app_id');
+        const storedAppSecret = localStorage.getItem('instagram_app_secret');
+        
+        if (storedAppId) setAppId(storedAppId);
+        if (storedAppSecret) setAppSecret(storedAppSecret);
+      }
+    };
+    
+    loadProfile();
     
     // Check for OAuth code in URL (after redirect back from Instagram)
     const urlParams = new URLSearchParams(window.location.search);
@@ -82,6 +114,13 @@ const InstagramConnect = () => {
     setError(null);
     
     try {
+      // Verificar se App ID e App Secret estão disponíveis
+      if (!appId || !appSecret) {
+        setError('App ID e App Secret são obrigatórios. Por favor, preencha os campos abaixo.');
+        setLoading(false);
+        return;
+      }
+
       // Verify state parameter to prevent CSRF attacks
       const urlParams = new URLSearchParams(window.location.search);
       const returnedState = urlParams.get('state');
@@ -90,10 +129,6 @@ const InstagramConnect = () => {
       if (!returnedState || !storedState || returnedState !== storedState) {
         throw new Error('Invalid state parameter. Authentication failed for security reasons.');
       }
-      
-      // Store credentials temporarily in localStorage for the callback
-      localStorage.setItem('instagram_app_id', appId);
-      localStorage.setItem('instagram_app_secret', appSecret);
       
       // Get the raw response from Instagram/Facebook API
       const rawResponse = await completeInstagramOAuth(code, appId, appSecret, redirectUri);
@@ -125,9 +160,20 @@ const InstagramConnect = () => {
         return;
       }
       
-      // Store the raw response as the profile
-      storeToken('instagram', rawResponse);
-      setProfile(rawResponse);
+      // Add the App ID and App Secret to the profile for future use
+      const profileWithCredentials = {
+        ...rawResponse,
+        appId,
+        appSecret
+      };
+      
+      // Store in database
+      await storeSocialCredentials('instagram', profileWithCredentials);
+      
+      // Also store in localStorage for backward compatibility
+      storeToken('instagram', profileWithCredentials);
+      
+      setProfile(profileWithCredentials);
       setConnected(true);
       
       // Clean up the URL and session storage
@@ -147,9 +193,12 @@ const InstagramConnect = () => {
     setError(null);
 
     try {
-      // Store credentials temporarily in localStorage for the callback
-      localStorage.setItem('instagram_app_id', appId);
-      localStorage.setItem('instagram_app_secret', appSecret);
+      // Verificar se App ID e App Secret estão disponíveis
+      if (!appId || !appSecret) {
+        setError('App ID e App Secret são obrigatórios. Por favor, preencha os campos abaixo.');
+        setLoading(false);
+        return;
+      }
       
       // Get selected permissions for Instagram Graph API
       const selectedPermissions = permissions
@@ -170,21 +219,26 @@ const InstagramConnect = () => {
     setLoading(true);
 
     try {
-      // Remove stored token
-      removeStoredToken('instagram');
+      // Remove stored token from database
+      await removeSocialCredentials('instagram');
       
-      // Clear stored credentials
-      localStorage.removeItem('instagram_app_id');
-      localStorage.removeItem('instagram_app_secret');
+      // Also remove from localStorage for backward compatibility
+      removeStoredToken('instagram');
       
       // Update state
       setConnected(false);
       setProfile(null);
+      
+      // Don't clear the credentials from state so they can be reused
     } catch (err) {
       setError('Failed to disconnect from Instagram. Please try again.');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleToggleAppSecretVisibility = () => {
+    setShowAppSecret(!showAppSecret);
   };
 
   return (
@@ -309,6 +363,49 @@ const InstagramConnect = () => {
 
           {!connected && (
             <Box sx={{ mt: 2 }}>
+              {/* Add credential fields */}
+              <Typography variant="subtitle1" gutterBottom>
+                Credenciais do Instagram
+              </Typography>
+              <Box sx={{ mb: 3 }}>
+                <TextField
+                  label="App ID"
+                  variant="outlined"
+                  fullWidth
+                  margin="normal"
+                  value={appId}
+                  onChange={(e) => setAppId(e.target.value)}
+                  required
+                  helperText="ID do aplicativo do Facebook Developer"
+                />
+                
+                <FormControl variant="outlined" fullWidth margin="normal">
+                  <InputLabel htmlFor="app-secret">App Secret</InputLabel>
+                  <OutlinedInput
+                    id="app-secret"
+                    type={showAppSecret ? 'text' : 'password'}
+                    value={appSecret}
+                    onChange={(e) => setAppSecret(e.target.value)}
+                    required
+                    endAdornment={
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label="toggle password visibility"
+                          onClick={handleToggleAppSecretVisibility}
+                          edge="end"
+                        >
+                          {showAppSecret ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    }
+                    label="App Secret"
+                  />
+                  <Typography variant="caption" color="text.secondary">
+                    Chave secreta do aplicativo do Facebook Developer
+                  </Typography>
+                </FormControl>
+              </Box>
+              
               <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
                 Clique no botão "Connect with Instagram" acima para autorizar esta aplicação a acessar sua conta comercial do Instagram.
                 <strong>Importante:</strong> Você deve ter uma conta comercial ou de criador do Instagram conectada à sua página do Facebook.
