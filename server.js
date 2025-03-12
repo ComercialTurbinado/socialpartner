@@ -24,7 +24,7 @@ app.use(express.json());
 app.use('/api/database', databaseRoutes);
 
 // Meta webhook verification endpoint
-app.get('/auth/callback', metaWebhookVerification);
+app.get('/webhook', metaWebhookVerification);
 
 // For all other routes, serve the index.html file
 app.get('*', (req, res) => {

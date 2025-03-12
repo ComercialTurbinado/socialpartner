@@ -39,8 +39,11 @@ const InstagramConnect = () => {
   const [appId, setAppId] = useState('');
   const [appSecret, setAppSecret] = useState('');
   const [accessToken, setAccessToken] = useState('');
+  const [callbackUrl, setCallbackUrl] = useState('');
+  const [verificationToken, setVerificationToken] = useState('');
   const [showAppSecret, setShowAppSecret] = useState(false);
   const [showAccessToken, setShowAccessToken] = useState(false);
+  const [showVerificationToken, setShowVerificationToken] = useState(false);
   
   const [permissions] = useState<InstagramPermission[]>([
     {
@@ -95,10 +98,14 @@ const InstagramConnect = () => {
         const storedAppId = localStorage.getItem('instagram_app_id');
         const storedAppSecret = localStorage.getItem('instagram_app_secret');
         const storedAccessToken = localStorage.getItem('instagram_access_token');
+        const storedCallbackUrl = localStorage.getItem('instagram_callback_url');
+        const storedVerificationToken = localStorage.getItem('instagram_verification_token');
         
         if (storedAppId) setAppId(storedAppId);
         if (storedAppSecret) setAppSecret(storedAppSecret);
         if (storedAccessToken) setAccessToken(storedAccessToken);
+        if (storedCallbackUrl) setCallbackUrl(storedCallbackUrl);
+        if (storedVerificationToken) setVerificationToken(storedVerificationToken);
       }
     };
     
@@ -207,6 +214,8 @@ const InstagramConnect = () => {
       // Store credentials temporarily in localStorage for the callback
       localStorage.setItem('instagram_app_id', appId);
       localStorage.setItem('instagram_app_secret', appSecret);
+      localStorage.setItem('instagram_callback_url', callbackUrl);
+      localStorage.setItem('instagram_verification_token', verificationToken);
       
       // Se o token de acesso foi fornecido, tente conectar diretamente
       if (accessToken) {
@@ -543,6 +552,46 @@ const InstagramConnect = () => {
                     }
                     label="App Secret"
                   />
+                </FormControl>
+                
+                <FormControl variant="outlined" fullWidth margin="normal">
+                  <InputLabel htmlFor="callback-url-input">URL de Callback</InputLabel>
+                  <OutlinedInput
+                    id="callback-url-input"
+                    type="text"
+                    value={callbackUrl}
+                    onChange={(e) => setCallbackUrl(e.target.value)}
+                    label="URL de Callback"
+                    placeholder="https://seu-dominio.com/instagram/callback"
+                  />
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+                    Configure esta URL no seu painel de desenvolvedor do Facebook
+                  </Typography>
+                </FormControl>
+
+                <FormControl variant="outlined" fullWidth margin="normal">
+                  <InputLabel htmlFor="verification-token-input">Token de Verificação</InputLabel>
+                  <OutlinedInput
+                    id="verification-token-input"
+                    type={showVerificationToken ? 'text' : 'password'}
+                    value={verificationToken}
+                    onChange={(e) => setVerificationToken(e.target.value)}
+                    endAdornment={
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label="toggle verification token visibility"
+                          onClick={() => setShowVerificationToken(!showVerificationToken)}
+                          edge="end"
+                        >
+                          {showVerificationToken ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    }
+                    label="Token de Verificação"
+                  />
+                  <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
+                    Token usado para validar webhooks do Instagram
+                  </Typography>
                 </FormControl>
                 
                 <FormControl variant="outlined" fullWidth margin="normal">
