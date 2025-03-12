@@ -334,12 +334,12 @@ export const refreshInstagramToken = async (): Promise<boolean> => {
   if (!profile || !profile.accessToken) return false;
   
   try {
-    // Get stored credentials from localStorage
-    const appId = localStorage.getItem('instagram_app_id');
-    const appSecret = localStorage.getItem('instagram_app_secret');
+    // Get App ID and App Secret directly from the profile object
+    // This ensures all credentials are stored and used together
+    const { appId, appSecret } = profile;
     
     if (!appId || !appSecret) {
-      throw new Error('App credentials not found');
+      throw new Error('App credentials not found in profile. Please reconnect your Instagram account.');
     }
     
     // Exchange current token for a new long-lived token

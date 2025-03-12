@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
   Box,
   Typography,
@@ -7,7 +8,6 @@ import {
   Button,
   Alert,
   CircularProgress,
-  Divider,
   Paper,
   TextField,
   FormControl,
@@ -38,7 +38,9 @@ const InstagramConnect = () => {
   // Use state for App ID and App Secret instead of environment variables
   const [appId, setAppId] = useState('');
   const [appSecret, setAppSecret] = useState('');
+  const [accessToken, setAccessToken] = useState('');
   const [showAppSecret, setShowAppSecret] = useState(false);
+  const [showAccessToken, setShowAccessToken] = useState(false);
   
   const [permissions] = useState<InstagramPermission[]>([
     {
@@ -92,9 +94,11 @@ const InstagramConnect = () => {
         // Try to get stored credentials from localStorage
         const storedAppId = localStorage.getItem('instagram_app_id');
         const storedAppSecret = localStorage.getItem('instagram_app_secret');
+        const storedAccessToken = localStorage.getItem('instagram_access_token');
         
         if (storedAppId) setAppId(storedAppId);
         if (storedAppSecret) setAppSecret(storedAppSecret);
+        if (storedAccessToken) setAccessToken(storedAccessToken);
       }
     };
     
@@ -200,6 +204,17 @@ const InstagramConnect = () => {
         return;
       }
       
+      // Store credentials temporarily in localStorage for the callback
+      localStorage.setItem('instagram_app_id', appId);
+      localStorage.setItem('instagram_app_secret', appSecret);
+      
+      // Se o token de acesso foi fornecido, tente conectar diretamente
+      if (accessToken) {
+        localStorage.setItem('instagram_access_token', accessToken);
+        await handleDirectConnect();
+        return;
+      }
+      
       // Get selected permissions for Instagram Graph API
       const selectedPermissions = permissions
         .filter(p => p.enabled)
@@ -215,6 +230,110 @@ const InstagramConnect = () => {
     }
   };
 
+  const handleDirectConnect = async () => {
+    try {
+      // Verificar se temos o token de acesso
+      if (!accessToken) {
+        throw new Error('Token de acesso é obrigatório para conexão direta.');
+      }
+
+      // Fazer uma requisição para a API Graph para verificar se o token é válido
+      // e obter informações básicas do usuário
+      await axios.get(
+        `https://graph.facebook.com/v18.0/me?fields=id,name&access_token=${accessToken}`
+      );
+
+      // Se chegamos aqui, o token é válido
+      // Agora vamos tentar obter as contas do Instagram associadas
+      const accountsResponse = await axios.get(
+        `https://graph.facebook.com/v18.0/me/accounts?access_token=${accessToken}`
+      );
+
+      // Armazenar a resposta bruta das contas
+      const rawAccountsResponse = accountsResponse.data;
+      
+      // Encontrar páginas com contas de negócios do Instagram
+      const pages = rawAccountsResponse.data || [];
+      let instagramBusinessAccountId = null;
+      let username = '';
+      let rawPageResponses = [];
+      
+      // Verificar cada página para uma conta de negócios do Instagram
+      for (const page of pages) {
+        try {
+          // Solicitar mais campos para garantir que obtemos todos os dados da conta do Instagram
+          const pageResponse = await axios.get(
+            `https://graph.facebook.com/v18.0/${page.id}?fields=instagram_business_account{id,username,profile_picture_url,name},connected_instagram_account{id,username,profile_picture_url,name}&access_token=${accessToken}`
+          );
+          
+          // Armazenar a resposta bruta da página
+          rawPageResponses.push(pageResponse.data);
+          
+          // Verificar primeiro instagram_business_account (método preferido)
+          if (pageResponse.data.instagram_business_account) {
+            instagramBusinessAccountId = pageResponse.data.instagram_business_account.id;
+            username = pageResponse.data.instagram_business_account.username;
+            break;
+          }
+          
+          // Alternativa para connected_instagram_account se a conta de negócios não for encontrada
+          if (pageResponse.data.connected_instagram_account) {
+            instagramBusinessAccountId = pageResponse.data.connected_instagram_account.id;
+            username = pageResponse.data.connected_instagram_account.username;
+            break;
+          }
+        } catch (err) {
+          // Armazenar quaisquer erros nas respostas brutas
+          rawPageResponses.push({ error: err });
+          console.warn(`Não foi possível obter a conta de negócios do Instagram para a página ${page.id}:`, err);
+        }
+      }
+
+      // Verificar se encontramos uma conta do Instagram
+      if (!instagramBusinessAccountId) {
+        throw new Error('Nenhuma conta de negócios do Instagram encontrada. Certifique-se de que você tem uma conta comercial ou de criador conectada a uma página do Facebook.');
+      }
+
+      // Criar o perfil com todas as informações necessárias
+      const profileWithCredentials = {
+        id: instagramBusinessAccountId,
+        name: username,
+        username: username,
+        accessToken: accessToken,
+        appId,
+        appSecret,
+        rawAccountsResponse,
+        rawPageResponses
+      };
+      
+      // Armazenar no banco de dados
+      await storeSocialCredentials('instagram', profileWithCredentials);
+      
+      // Também armazenar no localStorage para compatibilidade com versões anteriores
+      storeToken('instagram', profileWithCredentials);
+      
+      setProfile(profileWithCredentials);
+      setConnected(true);
+      
+      // Exibir mensagem de sucesso
+      setError(null);
+    } catch (err) {
+      console.error('Erro na conexão direta com Instagram:', err);
+      
+      // Exibir mensagem de erro detalhada
+      if (err && typeof err === 'object' && 'response' in err && 
+          err.response && typeof err.response === 'object' && 'data' in err.response) {
+        setError(`Erro na API do Instagram: ${JSON.stringify(err.response.data, null, 2)}`);
+      } else if (err instanceof Error) {
+        setError(`Falha ao conectar com o Instagram: ${err.message}`);
+      } else {
+        setError('Falha ao conectar com o Instagram: Erro desconhecido');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleDisconnect = async () => {
     setLoading(true);
 
@@ -225,9 +344,13 @@ const InstagramConnect = () => {
       // Also remove from localStorage for backward compatibility
       removeStoredToken('instagram');
       
+      // Remove stored access token
+      localStorage.removeItem('instagram_access_token');
+      
       // Update state
       setConnected(false);
       setProfile(null);
+      setAccessToken('');
       
       // Don't clear the credentials from state so they can be reused
     } catch (err) {
@@ -239,6 +362,10 @@ const InstagramConnect = () => {
 
   const handleToggleAppSecretVisibility = () => {
     setShowAppSecret(!showAppSecret);
+  };
+
+  const handleToggleAccessTokenVisibility = () => {
+    setShowAccessToken(!showAccessToken);
   };
 
   return (
@@ -339,9 +466,14 @@ const InstagramConnect = () => {
                 ) : connected ? (
                   'Disconnect'
                 ) : (
-                  'Connect with Instagram'
+                  'Conectar Instagram'
                 )}
               </Button>
+              {!connected && (
+                <Typography variant="caption" display="block" sx={{ mt: 1, textAlign: 'center' }}>
+                  Preencha as credenciais abaixo e clique aqui
+                </Typography>
+              )}
             </Box>
           </Box>
 
@@ -368,6 +500,13 @@ const InstagramConnect = () => {
                 Credenciais do Instagram
               </Typography>
               <Box sx={{ mb: 3 }}>
+                <Alert severity="info" sx={{ mb: 2 }}>
+                  <Typography variant="body2">
+                    Para conectar sua conta do Instagram, preencha os campos abaixo com as credenciais do seu aplicativo Facebook Developer.
+                    Todas as informações serão enviadas em uma única requisição quando você clicar em "Connect with Instagram".
+                  </Typography>
+                </Alert>
+                
                 <TextField
                   label="App ID"
                   variant="outlined"
@@ -375,18 +514,15 @@ const InstagramConnect = () => {
                   margin="normal"
                   value={appId}
                   onChange={(e) => setAppId(e.target.value)}
-                  required
-                  helperText="ID do aplicativo do Facebook Developer"
                 />
                 
                 <FormControl variant="outlined" fullWidth margin="normal">
-                  <InputLabel htmlFor="app-secret">App Secret</InputLabel>
+                  <InputLabel htmlFor="app-secret-input">App Secret</InputLabel>
                   <OutlinedInput
-                    id="app-secret"
+                    id="app-secret-input"
                     type={showAppSecret ? 'text' : 'password'}
                     value={appSecret}
                     onChange={(e) => setAppSecret(e.target.value)}
-                    required
                     endAdornment={
                       <InputAdornment position="end">
                         <IconButton
@@ -400,110 +536,39 @@ const InstagramConnect = () => {
                     }
                     label="App Secret"
                   />
-                  <Typography variant="caption" color="text.secondary">
-                    Chave secreta do aplicativo do Facebook Developer
-                  </Typography>
                 </FormControl>
+                
+                <FormControl variant="outlined" fullWidth margin="normal">
+                  <InputLabel htmlFor="access-token-input">Token de Acesso</InputLabel>
+                  <OutlinedInput
+                    id="access-token-input"
+                    type={showAccessToken ? 'text' : 'password'}
+                    value={accessToken}
+                    onChange={(e) => setAccessToken(e.target.value)}
+                    endAdornment={
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label="toggle token visibility"
+                          onClick={handleToggleAccessTokenVisibility}
+                          edge="end"
+                        >
+                          {showAccessToken ? <VisibilityOff /> : <Visibility />}
+                        </IconButton>
+                      </InputAdornment>
+                    }
+                    label="Token de Acesso"
+                  />
+                </FormControl>
+                
+                <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
+                  Se você já possui um token de acesso do Instagram, pode inseri-lo diretamente no campo acima.
+                  Caso contrário, preencha o App ID e App Secret e clique em "Conectar Instagram" para obter um novo token.
+                </Typography>
               </Box>
-              
-              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                Clique no botão "Connect with Instagram" acima para autorizar esta aplicação a acessar sua conta comercial do Instagram.
-                <strong>Importante:</strong> Você deve ter uma conta comercial ou de criador do Instagram conectada à sua página do Facebook.
-              </Typography>
-              
-              <Alert severity="info" sx={{ mb: 2 }}>
-                <Typography variant="subtitle2" gutterBottom>
-                  Como configurar uma Conta Comercial do Instagram:
-                </Typography>
-                <Typography variant="body2">
-                  1. Acesse seu perfil do Instagram e toque no menu hambúrguer (≡)
-                </Typography>
-                <Typography variant="body2">
-                  2. Toque em Configurações e privacidade, depois em Tipo de conta e ferramentas
-                </Typography>
-                <Typography variant="body2">
-                  3. Selecione Mudar para Conta Profissional e siga os passos
-                </Typography>
-                <Typography variant="body2">
-                  4. Escolha Comercial (ou Criador), depois conecte à sua página do Facebook
-                </Typography>
-                <Typography variant="body2">
-                  5. Retorne aqui e tente conectar novamente
-                </Typography>
-                <Typography variant="body2" sx={{ mt: 1 }}>
-                  Se você recebeu um erro sobre "Nenhuma conta comercial do Instagram encontrada", por favor siga estes passos:
-                  <ol>
-                    <li>Acesse sua Página do Facebook</li>
-                    <li>Clique em Configurações - Instagram</li>
-                    <li>Conecte sua conta do Instagram à sua Página do Facebook</li>
-                    <li>Certifique-se de que sua conta do Instagram esteja configurada como conta Comercial ou de Criador</li>
-                  </ol>
-                </Typography>
-              </Alert>
-              
-              <Divider sx={{ my: 2 }} />
-              
-              <Typography variant="subtitle1" gutterBottom>
-                Permissões Necessárias
-              </Typography>
-              <Paper variant="outlined" sx={{ p: 2, mt: 1 }}>
-                <Typography variant="body2" paragraph>
-                  • <strong>instagram_basic</strong>: Acesso a posts e informações básicas do perfil
-                </Typography>
-                <Typography variant="body2" paragraph>
-                  • <strong>instagram_content_publish</strong>: Capacidade de publicar conteúdo no Instagram
-                </Typography>
-                <Typography variant="body2" paragraph>
-                  • <strong>instagram_manage_comments</strong>: Acesso a comentários e quem comentou em seus posts
-                </Typography>
-                <Typography variant="body2" paragraph>
-                  • <strong>instagram_manage_insights</strong>: Acesso a curtidas e quem interagiu com seus posts
-                </Typography>
-              </Paper>
             </Box>
           )}
         </CardContent>
       </Card>
-
-      {connected && profile && (
-        <Box sx={{ mt: 3, display:'' }}>
-          <Typography variant="h6" gutterBottom>
-            Connected Instagram Account - Raw Response Data
-          </Typography>
-          <Paper variant="outlined" sx={{ p: 2 }}>
-            {/* Display basic info if available */}
-            {profile.username && (
-              <Box sx={{ mb: 2 }}>
-                <Typography variant="h6">{profile.username}</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  User ID: {profile.id}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Connected since: {new Date().toLocaleDateString()}
-                </Typography>
-              </Box>
-            )}
-            
-            {/* Display raw response data */}
-            <Typography variant="subtitle1" gutterBottom sx={{ mt: 2 }}>
-              Raw Facebook/Instagram API Response:
-            </Typography>
-            <Box 
-              component="pre" 
-              sx={{ 
-                p: 2, 
-                bgcolor: '#f5f5f5', 
-                borderRadius: 1, 
-                overflow: 'auto',
-                maxHeight: '400px',
-                fontSize: '0.75rem'
-              }}
-            >
-              {JSON.stringify(profile, null, 2)}
-            </Box>
-          </Paper>
-        </Box>
-      )}
     </Box>
   );
 };
