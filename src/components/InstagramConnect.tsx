@@ -210,7 +210,9 @@ const InstagramConnect = () => {
       
       // Se o token de acesso foi fornecido, tente conectar diretamente
       if (accessToken) {
-        localStorage.setItem('instagram_access_token', accessToken);
+        // Sanitize the token before storing it
+        const sanitizedToken = accessToken.trim().replace(/["']/g, '');
+        localStorage.setItem('instagram_access_token', sanitizedToken);
         await handleDirectConnect();
         return;
       }
@@ -236,11 +238,16 @@ const InstagramConnect = () => {
       if (!accessToken) {
         throw new Error('Token de acesso é obrigatório para conexão direta.');
       }
-
+      
+      // Sanitize the access token by trimming whitespace and removing any quotes
+      const sanitizedToken = accessToken.trim().replace(/["']/g, '');
+      
+      console.log('Using sanitized token:', sanitizedToken);
+      
       // Fazer uma requisição para a API Graph para verificar se o token é válido
       // e obter informações básicas do usuário
       await axios.get(
-        `https://graph.facebook.com/v18.0/me?fields=id,name&access_token=${accessToken}`
+        `https://graph.facebook.com/v18.0/me?fields=id,name&access_token=${sanitizedToken}`
       );
 
       // Se chegamos aqui, o token é válido
@@ -263,7 +270,7 @@ const InstagramConnect = () => {
         try {
           // Solicitar mais campos para garantir que obtemos todos os dados da conta do Instagram
           const pageResponse = await axios.get(
-            `https://graph.facebook.com/v18.0/${page.id}?fields=instagram_business_account{id,username,profile_picture_url,name},connected_instagram_account{id,username,profile_picture_url,name}&access_token=${accessToken}`
+            `https://graph.facebook.com/v18.0/${page.id}?fields=instagram_business_account{id,username,profile_picture_url,name},connected_instagram_account{id,username,profile_picture_url,name}&access_token=${sanitizedToken}`
           );
           
           // Armazenar a resposta bruta da página
@@ -299,7 +306,7 @@ const InstagramConnect = () => {
         id: instagramBusinessAccountId,
         name: username,
         username: username,
-        accessToken: accessToken,
+        accessToken: sanitizedToken, // Use the sanitized token here
         appId,
         appSecret,
         rawAccountsResponse,
