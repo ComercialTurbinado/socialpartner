@@ -1,6 +1,7 @@
 import express from 'express';
 import { config } from 'dotenv';
 import { metaWebhookVerification } from './src/api/webhook.js';
+import databaseRoutes from './src/api/database.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -18,6 +19,9 @@ app.use(express.static(path.join(__dirname, 'dist')));
 
 // Parse JSON request body
 app.use(express.json());
+
+// API routes
+app.use('/api/database', databaseRoutes);
 
 // Meta webhook verification endpoint
 app.get('/auth/callback', metaWebhookVerification);
